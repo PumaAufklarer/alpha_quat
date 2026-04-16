@@ -1,5 +1,6 @@
 """Tasks module for ETF quantitative analysis."""
-from .scheduler import Scheduler
+
 from .fetch_tasks import FetchAllTask
+from .scheduler import Scheduler
 
 __all__ = ["Scheduler", "FetchAllTask"]

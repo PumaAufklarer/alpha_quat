@@ -1,9 +1,10 @@
 """
 Data feed for backtesting.
 """
+
 from abc import ABC, abstractmethod
+from collections.abc import Iterator
 from datetime import datetime
-from typing import Optional, Iterator
 
 import pandas as pd
 
@@ -23,7 +24,7 @@ class DataFeed(ABC):
 
     @property
     @abstractmethod
-    def current_datetime(self) -> Optional[datetime]:
+    def current_datetime(self) -> datetime | None:
         """Get the current datetime of the data feed."""
         pass
 
@@ -42,7 +43,7 @@ class PandasDataFeed(DataFeed):
         self.df = df.copy()
         self.datetime_col = datetime_col
         self._current_index = 0
-        self._current_datetime: Optional[datetime] = None
+        self._current_datetime: datetime | None = None
 
     def __iter__(self) -> Iterator[dict]:
         """Iterate over data bars."""
@@ -57,6 +58,6 @@ class PandasDataFeed(DataFeed):
         self._current_datetime = None
 
     @property
-    def current_datetime(self) -> Optional[datetime]:
+    def current_datetime(self) -> datetime | None:
         """Get the current datetime of the data feed."""
         return self._current_datetime

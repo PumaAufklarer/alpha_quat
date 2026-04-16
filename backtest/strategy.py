@@ -1,21 +1,21 @@
 """
 Base strategy class for backtesting.
 """
+
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional
 
 from .data import DataFeed
-from .portfolio import Portfolio
 from .order import Order, OrderType
+from .portfolio import Portfolio
 
 
 class Strategy(ABC):
     """Abstract base class for trading strategies."""
 
     def __init__(self):
-        self.data: Optional[DataFeed] = None
-        self.portfolio: Optional[Portfolio] = None
-        self._pending_orders: List[Order] = []
+        self.data: DataFeed | None = None
+        self.portfolio: Portfolio | None = None
+        self._pending_orders: list[Order] = []
 
     def initialize(self, data: DataFeed, portfolio: Portfolio) -> None:
         """
@@ -29,7 +29,7 @@ class Strategy(ABC):
         self.portfolio = portfolio
 
     @abstractmethod
-    def on_bar(self, bar: Dict) -> None:
+    def on_bar(self, bar: dict) -> None:
         """
         Called on each new bar of data.
 
@@ -47,8 +47,13 @@ class Strategy(ABC):
         """
         pass
 
-    def buy(self, ts_code: str, quantity: int, order_type: OrderType = OrderType.MARKET,
-            limit_price: float | None = None) -> Order:
+    def buy(
+        self,
+        ts_code: str,
+        quantity: int,
+        order_type: OrderType = OrderType.MARKET,
+        limit_price: float | None = None,
+    ) -> Order:
         """
         Place a buy order.
 
@@ -62,16 +67,18 @@ class Strategy(ABC):
             Order instance
         """
         order = Order(
-            ts_code=ts_code,
-            quantity=quantity,
-            order_type=order_type,
-            limit_price=limit_price
+            ts_code=ts_code, quantity=quantity, order_type=order_type, limit_price=limit_price
         )
         self._pending_orders.append(order)
         return order
 
-    def sell(self, ts_code: str, quantity: int, order_type: OrderType = OrderType.MARKET,
-             limit_price: float | None = None) -> Order:
+    def sell(
+        self,
+        ts_code: str,
+        quantity: int,
+        order_type: OrderType = OrderType.MARKET,
+        limit_price: float | None = None,
+    ) -> Order:
         """
         Place a sell order.
 
@@ -85,15 +92,12 @@ class Strategy(ABC):
             Order instance
         """
         order = Order(
-            ts_code=ts_code,
-            quantity=-quantity,
-            order_type=order_type,
-            limit_price=limit_price
+            ts_code=ts_code, quantity=-quantity, order_type=order_type, limit_price=limit_price
         )
         self._pending_orders.append(order)
         return order
 
-    def get_pending_orders(self) -> List[Order]:
+    def get_pending_orders(self) -> list[Order]:
         """Get all pending orders and clear the list."""
         orders = self._pending_orders.copy()
         self._pending_orders.clear()

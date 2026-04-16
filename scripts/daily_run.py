@@ -8,17 +8,17 @@ This script executes all daily tasks in sequence:
 3. (TODO) Run quantitative analysis
 4. (TODO) Send email report
 """
+
 import argparse
 import logging
 from datetime import datetime
 
 from data_fetcher import DataSource
-from tasks import Scheduler, FetchAllTask
+from tasks import FetchAllTask, Scheduler
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -30,48 +30,35 @@ def parse_args():
         "--start-date",
         type=str,
         default="",
-        help="Start date (YYYYMMDD), default: empty (tushare default)"
+        help="Start date (YYYYMMDD), default: empty (tushare default)",
     )
     parser.add_argument(
-        "--end-date",
-        type=str,
-        default="",
-        help="End date (YYYYMMDD), default: empty (today)"
+        "--end-date", type=str, default="", help="End date (YYYYMMDD), default: empty (today)"
     )
     parser.add_argument(
-        "--exchange",
-        type=str,
-        default="",
-        help="Exchange code (SSE/SZSE/BSE), default: all"
+        "--exchange", type=str, default="", help="Exchange code (SSE/SZSE/BSE), default: all"
     )
     parser.add_argument(
         "--list-status",
         type=str,
         default="L",
-        help="List status (L: listed, D: delisted, P: suspended), default: L"
+        help="List status (L: listed, D: delisted, P: suspended), default: L",
     )
     parser.add_argument(
-        "--force-refresh",
-        action="store_true",
-        help="Force refresh data even if cached"
+        "--force-refresh", action="store_true", help="Force refresh data even if cached"
     )
     parser.add_argument(
-        "--limit",
-        type=int,
-        default=None,
-        help="Limit number of stocks for testing"
+        "--limit", type=int, default=None, help="Limit number of stocks for testing"
     )
     parser.add_argument(
-        "--no-stop-on-error",
-        action="store_true",
-        help="Continue execution even if a task fails"
+        "--no-stop-on-error", action="store_true", help="Continue execution even if a task fails"
     )
     parser.add_argument(
         "--markets",
         type=str,
         nargs="*",
         default=["主板"],
-        help="Market segments to fetch (e.g., '主板' '科创板' '创业板' '北交所'), default: '主板'"
+        help="Market segments to fetch (e.g., '主板' '科创板' '创业板' '北交所'), default: '主板'",
     )
     return parser.parse_args()
 
@@ -103,7 +90,7 @@ def main():
         list_status=args.list_status,
         force_refresh=args.force_refresh,
         limit=args.limit,
-        markets=args.markets
+        markets=args.markets,
     )
     scheduler.add_task(fetch_task)
 

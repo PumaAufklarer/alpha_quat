@@ -1,7 +1,7 @@
 """Tushare data fetcher."""
+
 import json
 from pathlib import Path
-from typing import Optional
 
 import tushare as ts
 
@@ -11,7 +11,7 @@ from .tushare_api import TushareAPI
 class TushareFetcher:
     """Tushare data fetcher class."""
 
-    def __init__(self, config_path: Optional[str] = None):
+    def __init__(self, config_path: str | None = None):
         """
         Initialize TushareFetcher with token from config.
 
@@ -28,7 +28,7 @@ class TushareFetcher:
         if not config_path.exists():
             raise FileNotFoundError(f"Config file not found at {config_path}")
 
-        with open(config_path, "r", encoding="utf-8") as f:
+        with open(config_path, encoding="utf-8") as f:
             config = json.load(f)
 
         token = config.get("tushare", {}).get("token")
