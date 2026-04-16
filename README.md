@@ -5,9 +5,8 @@
 ## 项目结构
 
 ```
-etf_quat/
+alpha_quat/
 ├── config.json              # 配置文件（Tushare token）
-├── main.py                  # 主入口
 ├── data_fetcher/            # 数据获取模块
 │   ├── fetcher.py          # Tushare API 初始化
 │   ├── sources.py          # 数据源接口（带缓存）
@@ -24,6 +23,11 @@ etf_quat/
 │   ├── portfolio.py        # 投资组合管理
 │   ├── order.py            # 订单/交易管理
 │   └── metrics.py          # 绩效指标计算
+├── features/                # 特征工程模块
+│   ├── base.py             # Feature 抽象基类
+│   ├── basic.py            # 基础特征（收益率、波动率等）
+│   ├── technical.py        # 技术指标（SMA、EMA、RSI、MACD等）
+│   └── pipeline.py         # 特征流水线
 ├── examples/                # 示例策略
 │   ├── turtle_strategy.py  # 海龟策略实现
 │   └── backtest_mainboard.py  # 主板股票回测脚本
@@ -66,13 +70,14 @@ uv run -m scripts.daily_run \
 # 回测海龟策略（限制 10 只股票测试）
 uv run -m examples.backtest_mainboard --limit 10
 
-# 完整参数
+# 完整参数（包含 ATR 头寸管理）
 uv run -m examples.backtest_mainboard \
     --limit 100 \
     --days 5000 \
-    --entry-period 10 \
-    --exit-period 5 \
-    --include-st
+    --entry-period 20 \
+    --exit-period 10 \
+    --include-st \
+    --use-atr
 ```
 
 ## 数据缓存
@@ -88,3 +93,40 @@ data/
 ├── index_daily/         # 指数日线
 └── fund/                # 基金数据
 ```
+
+## 特征工程
+
+使用 features 模块计算技术指标和特征：
+
+```python
+import pandas as pd
+from features import FeaturePipeline, Returns, SMA, RSI, MACD
+
+# 创建特征流水线
+pipeline = FeaturePipeline([
+    Returns(periods=1),
+    SMA(period=20),
+    SMA(period=60),
+    RSI(period=14),
+    MACD(),
+])
+
+# 计算特征
+df_with_features = pipeline.calculate(df)
+```
+
+### 可用特征
+
+**基础特征**：
+- `Returns` - 简单收益率
+- `LogReturns` - 对数收益率
+- `Volatility` - 滚动波动率
+
+**技术指标**：
+- `SMA` - 简单移动平均
+- `EMA` - 指数移动平均
+- `RSI` - 相对强弱指标
+- `MACD` - 指数平滑异同移动平均线
+- `BollingerBands` - 布林带
+- `ATR` - 平均真实波幅
+- `DonchianChannels` - 唐奇安通道（海龟策略核心）
