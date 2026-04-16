@@ -2,8 +2,8 @@
 Test script for Turtle Strategy with sample data.
 """
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 from backtest import BacktestEngine, Portfolio
 from examples import TurtleStrategy

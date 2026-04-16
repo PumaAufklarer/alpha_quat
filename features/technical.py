@@ -14,9 +14,7 @@ class DonchianChannels(FeatureBase):
     Used in Turtle Trading Strategy.
     """
 
-    def __init__(
-        self, high_col: str = "high", low_col: str = "low", period: int = 20
-    ):
+    def __init__(self, high_col: str = "high", low_col: str = "low", period: int = 20):
         """
         Initialize Donchian Channels feature.
 

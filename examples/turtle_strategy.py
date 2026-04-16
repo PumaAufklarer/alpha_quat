@@ -5,7 +5,7 @@ Turtle Trading Strategy implementation using feature engineering module.
 import pandas as pd
 
 from backtest import OrderType, Strategy
-from features import FeaturePipeline, DonchianChannels, ATR
+from features import ATR, DonchianChannels, FeaturePipeline
 
 
 class TurtleStrategy(Strategy):

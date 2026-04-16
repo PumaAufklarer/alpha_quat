@@ -67,18 +67,28 @@ uv run -m scripts.daily_run \
 ### 回测
 
 ```bash
-# 回测海龟策略（限制 10 只股票测试）
+# 回测海龟策略（限制 10 只股票测试，默认使用前复权）
 uv run -m examples.backtest_mainboard --limit 10
 
-# 完整参数（包含 ATR 头寸管理）
+# 完整参数（包含 ATR 头寸管理和复权选项）
 uv run -m examples.backtest_mainboard \
     --limit 100 \
     --days 5000 \
     --entry-period 20 \
     --exit-period 10 \
     --include-st \
-    --use-atr
+    --use-atr \
+    --adj qfq
 ```
+
+**复权选项说明**：
+- `--adj qfq` - 前复权（默认，推荐用于技术分析和信号生成）
+- `--adj hfq` - 后复权（推荐用于收益率计算）
+- `--adj None` - 不复权（原始价格）
+
+**前复权 vs 后复权选择**：
+- 技术指标计算、买卖点判断 → 使用前复权（qfq）
+- 回测收益率计算 → 使用后复权（hfq）
 
 ## 数据缓存
 

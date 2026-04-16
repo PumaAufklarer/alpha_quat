@@ -2,20 +2,20 @@
 Example script demonstrating the feature engineering module.
 """
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 from features import (
-    FeaturePipeline,
-    Returns,
-    LogReturns,
-    Volatility,
-    SMA,
-    EMA,
-    RSI,
-    MACD,
-    BollingerBands,
     ATR,
+    EMA,
+    MACD,
+    RSI,
+    SMA,
+    BollingerBands,
+    FeaturePipeline,
+    LogReturns,
+    Returns,
+    Volatility,
 )
 
 
@@ -38,9 +38,7 @@ def generate_sample_data(days: int = 100) -> pd.DataFrame:
     open_[0] = prices[0] * 0.995
     close = prices
 
-    df = pd.DataFrame(
-        {"open": open_, "high": high, "low": low, "close": close}, index=dates
-    )
+    df = pd.DataFrame({"open": open_, "high": high, "low": low, "close": close}, index=dates)
     return df
 
 

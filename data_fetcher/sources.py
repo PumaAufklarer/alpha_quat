@@ -1,11 +1,15 @@
 """Common data sources wrapped with caching."""
 
+import logging
 from pathlib import Path
 
 import pandas as pd
+import tushare as ts
 
 from .fetcher import TushareFetcher
 from .utils import get_or_fetch_data, merge_and_fetch_ts_data
+
+logger = logging.getLogger(__name__)
 
 
 class DataSource:
@@ -141,6 +145,7 @@ class DataSource:
         trade_date: str = "",
         start_date: str = "",
         end_date: str = "",
+        adj: str | None = None,
         force_refresh: bool = False,
     ) -> tuple[pd.DataFrame, bool]:
         """
@@ -151,29 +156,101 @@ class DataSource:
             trade_date: Trade date (YYYYMMDD)
             start_date: Start date (YYYYMMDD)
             end_date: End date (YYYYMMDD)
+            adj: Adjustment type: None (unadjusted), 'qfq' (前复权), 'hfq' (后复权)
             force_refresh: Skip cache if True
 
         Returns:
             Tuple of (DataFrame, is_cached)
         """
+        # Include adj in data_name for caching different adjusted data
+        adj_suffix = f"_{adj}" if adj else ""
         if ts_code:
-            data_name = f"daily_{ts_code}"
+            data_name = f"daily_{ts_code}{adj_suffix}"
         else:
-            data_name = "daily_all"
+            data_name = f"daily_all{adj_suffix}"
 
         def fetch():
-            if ts_code:
-                return self.api.fetch_until_complete(
-                    "daily",
-                    ts_code=ts_code,
-                    start_date=start_date,
-                    end_date=end_date,
-                    trade_date=trade_date,
-                )
+            if adj:
+                # Use pro_bar for adjusted data with pagination
+                all_dfs = []
+                current_end_date = end_date
+                max_rows_per_request = 6000
+
+                while True:
+                    logger.debug(f"Fetching {adj} daily for {ts_code}, end_date={current_end_date}")
+
+                    df = ts.pro_bar(
+                        ts_code=ts_code,
+                        adj=adj,
+                        start_date=start_date,
+                        end_date=current_end_date,
+                        api=self.pro,
+                    )
+
+                    if df is None or df.empty:
+                        break
+
+                    # Convert trade_date to string if it's datetime
+                    if "trade_date" in df.columns:
+                        if pd.api.types.is_datetime64_any_dtype(df["trade_date"]):
+                            df["trade_date"] = df["trade_date"].dt.strftime("%Y%m%d")
+
+                    all_dfs.append(df)
+
+                    # Check if we've reached the start date or got less than max rows
+                    if len(df) < max_rows_per_request:
+                        break
+
+                    if not start_date:
+                        # If no start_date specified, continue fetching older data
+                        if "trade_date" in df.columns:
+                            df_sorted = df.sort_values("trade_date", ascending=True)
+                            earliest_date = df_sorted.iloc[0]["trade_date"]
+                            # Set end_date to earliest_date to get older data
+                            if current_end_date == earliest_date:
+                                break  # Prevent infinite loop
+                            current_end_date = earliest_date
+                        else:
+                            break
+                    else:
+                        # If we have a start_date, check if we've reached it
+                        if "trade_date" in df.columns:
+                            df_sorted = df.sort_values("trade_date", ascending=True)
+                            earliest_date = df_sorted.iloc[0]["trade_date"]
+                            if earliest_date <= start_date:
+                                break
+                            current_end_date = earliest_date
+                        else:
+                            break
+
+                if all_dfs:
+                    result = pd.concat(all_dfs, ignore_index=True)
+                    # Remove duplicates
+                    if "trade_date" in result.columns:
+                        result = result.drop_duplicates(subset=["trade_date"], keep="last")
+                        # Sort in descending order to match tushare's default
+                        result = result.sort_values("trade_date", ascending=False).reset_index(
+                            drop=True
+                        )
+                    return result
+                return pd.DataFrame()
             else:
-                return self.pro.daily(
-                    ts_code=ts_code, trade_date=trade_date, start_date=start_date, end_date=end_date
-                )
+                # Use original daily API for unadjusted data
+                if ts_code:
+                    return self.api.fetch_until_complete(
+                        "daily",
+                        ts_code=ts_code,
+                        start_date=start_date,
+                        end_date=end_date,
+                        trade_date=trade_date,
+                    )
+                else:
+                    return self.pro.daily(
+                        ts_code=ts_code,
+                        trade_date=trade_date,
+                        start_date=start_date,
+                        end_date=end_date,
+                    )
 
         return merge_and_fetch_ts_data(
             data_name,
