@@ -65,6 +65,40 @@ class FetchDailyBasicTask(Task):
         return df
 
 
+class FetchDailyTask(Task):
+    """Task to fetch daily OHLC data for a stock."""
+
+    def __init__(
+        self,
+        ds: DataSource,
+        ts_code: str,
+        start_date: str = "",
+        end_date: str = "",
+        adj: str | None = "qfq",
+        force_refresh: bool = False,
+    ):
+        adj_suffix = f"_{adj}" if adj else ""
+        super().__init__(f"fetch_daily{adj_suffix}_{ts_code}")
+        self.ds = ds
+        self.ts_code = ts_code
+        self.start_date = start_date
+        self.end_date = end_date
+        self.adj = adj
+        self.force_refresh = force_refresh
+
+    def run(self) -> pd.DataFrame:
+        df, is_cached = self.ds.get_daily(
+            ts_code=self.ts_code,
+            start_date=self.start_date,
+            end_date=self.end_date,
+            adj=self.adj,
+            force_refresh=self.force_refresh,
+        )
+        adj_str = self.adj if self.adj else "unadjusted"
+        logger.info(f"Fetched {len(df)} {adj_str} records for {self.ts_code} (cached: {is_cached})")
+        return df
+
+
 class FetchAllTask(Task):
     """
     Task to fetch all data:
@@ -82,6 +116,7 @@ class FetchAllTask(Task):
         force_refresh: bool = False,
         limit: int | None = None,
         markets: list[str] | None = None,
+        adj: str | None = "qfq",
     ):
         super().__init__("fetch_all")
         self.ds = ds
@@ -92,6 +127,7 @@ class FetchAllTask(Task):
         self.force_refresh = force_refresh
         self.limit = limit
         self.markets = markets
+        self.adj = adj
 
     def run(self) -> dict[str, Any]:
         results: dict[str, Any] = {}
@@ -105,10 +141,10 @@ class FetchAllTask(Task):
             force_refresh=self.force_refresh,
         )
         stock_df = stock_list_task.run()
-        results["stock_list"] = stock_df
 
         if stock_df.empty:
             logger.warning("No stocks found, skipping daily basic fetch")
+            results["stock_list"] = stock_df
             return results
 
         # Filter by markets if specified
@@ -131,7 +167,7 @@ class FetchAllTask(Task):
 
         # Step 2: Fetch daily basic for each stock
         logger.info(f"Step 2: Fetching daily basic for {len(stocks_to_fetch)} stocks")
-        daily_results = []
+        daily_basic_results = []
 
         for _, row in stocks_to_fetch.iterrows():
             ts_code = row["ts_code"]
@@ -145,16 +181,49 @@ class FetchAllTask(Task):
                 )
                 daily_df = daily_task.run()
                 if not daily_df.empty:
-                    daily_results.append(daily_df)
+                    daily_basic_results.append(daily_df)
             except Exception as e:
                 logger.error(f"Failed to fetch daily basic for {ts_code}: {e}")
 
-        if daily_results:
-            all_daily_df = pd.concat(daily_results, ignore_index=True)
-            results["daily_basic"] = all_daily_df
-            logger.info(f"Fetched total {len(all_daily_df)} daily basic records")
+        if daily_basic_results:
+            all_daily_basic_df = pd.concat(daily_basic_results, ignore_index=True)
+            results["daily_basic"] = all_daily_basic_df
+            logger.info(f"Fetched total {len(all_daily_basic_df)} daily basic records")
         else:
             results["daily_basic"] = pd.DataFrame()
             logger.warning("No daily basic data fetched")
+
+        # Step 3: Fetch daily OHLC data for each stock
+        adj_str = self.adj if self.adj else "unadjusted"
+        logger.info(f"Step 3: Fetching {adj_str} daily OHLC for {len(stocks_to_fetch)} stocks")
+        daily_results = []
+
+        for _, row in stocks_to_fetch.iterrows():
+            ts_code = row["ts_code"]
+            try:
+                daily_task = FetchDailyTask(
+                    self.ds,
+                    ts_code=ts_code,
+                    start_date=self.start_date,
+                    end_date=self.end_date,
+                    adj=self.adj,
+                    force_refresh=self.force_refresh,
+                )
+                daily_df = daily_task.run()
+                if not daily_df.empty:
+                    daily_results.append(daily_df)
+            except Exception as e:
+                logger.error(f"Failed to fetch daily OHLC for {ts_code}: {e}")
+
+        if daily_results:
+            all_daily_df = pd.concat(daily_results, ignore_index=True)
+            results["daily"] = all_daily_df
+            logger.info(f"Fetched total {len(all_daily_df)} {adj_str} daily OHLC records")
+        else:
+            results["daily"] = pd.DataFrame()
+            logger.warning("No daily OHLC data fetched")
+
+        # Return the filtered stock list instead of the full one
+        results["stock_list"] = stocks_to_fetch
 
         return results

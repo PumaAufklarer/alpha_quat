@@ -60,6 +60,13 @@ def parse_args():
         default=["主板"],
         help="Market segments to fetch (e.g., '主板' '科创板' '创业板' '北交所'), default: '主板'",
     )
+    parser.add_argument(
+        "--adj",
+        type=str,
+        default="qfq",
+        choices=[None, "qfq", "hfq"],
+        help="Price adjustment type for daily OHLC: None (unadjusted), qfq (前复权, default), hfq (后复权)",
+    )
     return parser.parse_args()
 
 
@@ -91,6 +98,7 @@ def main():
         force_refresh=args.force_refresh,
         limit=args.limit,
         markets=args.markets,
+        adj=args.adj,
     )
     scheduler.add_task(fetch_task)
 
@@ -112,10 +120,13 @@ def main():
             if fetch_result:
                 stock_list = fetch_result.get("stock_list")
                 daily_basic = fetch_result.get("daily_basic")
+                daily = fetch_result.get("daily")
                 if stock_list is not None:
                     logger.info(f"Stocks fetched: {len(stock_list)}")
                 if daily_basic is not None:
-                    logger.info(f"Daily records fetched: {len(daily_basic)}")
+                    logger.info(f"Daily basic records fetched: {len(daily_basic)}")
+                if daily is not None:
+                    logger.info(f"Daily OHLC records fetched: {len(daily)}")
 
         logger.info(f"Completed at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         logger.info("=" * 60)

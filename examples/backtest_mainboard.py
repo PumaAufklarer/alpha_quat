@@ -67,6 +67,13 @@ def parse_args():
     parser.add_argument(
         "--use-atr", action="store_true", help="Use ATR for position sizing (default: False)"
     )
+    parser.add_argument(
+        "--adj",
+        type=str,
+        default="qfq",
+        choices=[None, "qfq", "hfq"],
+        help="Price adjustment type: None (unadjusted), qfq (前复权, default), hfq (后复权)",
+    )
     return parser.parse_args()
 
 
@@ -78,10 +85,11 @@ def backtest_single_stock(
     entry_period: int,
     exit_period: int,
     use_atr: bool,
+    adj: str | None,
 ) -> dict:
     """Backtest single stock and return results."""
     # Fetch daily OHLC data
-    daily_df, _ = ds.get_daily(ts_code=ts_code)
+    daily_df, _ = ds.get_daily(ts_code=ts_code, adj=adj)
 
     if daily_df.empty:
         return None
@@ -137,10 +145,11 @@ def main():
     logger.info("=" * 60)
     logger.info("Turtle Strategy Backtest (with Feature Engineering) - Main Board")
     logger.info("=" * 60)
-    logger.info(f"Configuration:")
+    logger.info("Configuration:")
     logger.info(f"  Entry period: {args.entry_period}")
     logger.info(f"  Exit period: {args.exit_period}")
     logger.info(f"  Use ATR sizing: {args.use_atr}")
+    logger.info(f"  Price adjustment: {args.adj or 'None (unadjusted)'}")
 
     # Initialize data source
     logger.info("Initializing data source...")
@@ -179,6 +188,7 @@ def main():
                 entry_period=args.entry_period,
                 exit_period=args.exit_period,
                 use_atr=args.use_atr,
+                adj=args.adj,
             )
             if result:
                 results.append(result)
