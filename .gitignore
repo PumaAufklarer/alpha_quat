@@ -1,0 +1,7 @@
+/.venv
+/data
+/.claude
+config.json
+__pycache__/
+*.pyc
+*.pyo

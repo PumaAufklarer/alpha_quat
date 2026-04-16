@@ -1,0 +1,11 @@
+[project]
+name = "alpha-quat"
+version = "0.1.0"
+description = "Stock quantitative analysis tool based on Tushare data"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "tushare>=1.4.29",
+    "pyarrow>=15.0.0",
+    "pandas>=2.0.0",
+]
