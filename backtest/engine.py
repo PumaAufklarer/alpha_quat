@@ -1,22 +1,23 @@
 """
 Backtest engine core.
 """
+
 from dataclasses import dataclass
-from typing import Dict, List, Optional
 
 from .data import DataFeed
-from .strategy import Strategy
-from .portfolio import Portfolio
-from .order import Order, OrderStatus, OrderType, Trade
 from .metrics import Metrics
+from .order import Order, OrderStatus, OrderType, Trade
+from .portfolio import Portfolio
+from .strategy import Strategy
 
 
 @dataclass
 class BacktestResult:
     """Result of a backtest run."""
+
     portfolio: Portfolio
     metrics: Metrics
-    trades: List[Trade]
+    trades: list[Trade]
 
 
 class BacktestEngine:
@@ -57,6 +58,12 @@ class BacktestEngine:
 
         # Main backtest loop
         for bar in self.data:
+            # Update position prices
+            ts_code = bar.get("ts_code")
+            close = bar.get("close")
+            if ts_code and close:
+                self.portfolio.update_price(ts_code, close)
+
             # Call strategy on_bar
             self.strategy.on_bar(bar)
 
@@ -73,12 +80,10 @@ class BacktestEngine:
         metrics = Metrics.calculate(self.portfolio.equity_history)
 
         return BacktestResult(
-            portfolio=self.portfolio,
-            metrics=metrics,
-            trades=self.portfolio.trades
+            portfolio=self.portfolio, metrics=metrics, trades=self.portfolio.trades
         )
 
-    def _execute_order(self, order: Order, bar: Dict) -> None:
+    def _execute_order(self, order: Order, bar: dict) -> None:
         """
         Execute an order against the current bar.
 
@@ -101,7 +106,7 @@ class BacktestEngine:
                     quantity=order.quantity,
                     price=fill_price,
                     traded_at=order.filled_at,
-                    order_id=str(self._next_order_id())
+                    order_id=str(self._next_order_id()),
                 )
                 self.portfolio.add_trade(trade)
                 self.strategy.on_order_filled(order)

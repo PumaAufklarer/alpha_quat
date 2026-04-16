@@ -1,8 +1,9 @@
 """Utility functions for data storage and caching."""
+
 import re
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Callable
 
 import pandas as pd
 
@@ -18,13 +19,15 @@ def sanitize_filename(name: str) -> str:
         Sanitized string
     """
     # Replace invalid characters with underscore
-    name = re.sub(r'[<>:"/\\|?*]', '_', name)
+    name = re.sub(r'[<>:"/\\|?*]', "_", name)
     # Replace spaces with underscore
-    name = name.replace(' ', '_')
+    name = name.replace(" ", "_")
     return name
 
 
-def get_latest_parquet_path(data_dir: Path, data_name: str, sub_dir: Optional[str] = None) -> Optional[Path]:
+def get_latest_parquet_path(
+    data_dir: Path, data_name: str, sub_dir: str | None = None
+) -> Path | None:
     """
     Get the latest parquet file path for given data name.
 
@@ -50,7 +53,7 @@ def get_latest_parquet_path(data_dir: Path, data_name: str, sub_dir: Optional[st
     return files[0]
 
 
-def is_data_up_to_date(file_path: Path, check_date: Optional[datetime] = None) -> bool:
+def is_data_up_to_date(file_path: Path, check_date: datetime | None = None) -> bool:
     """
     Check if data file is up to date for given date.
 
@@ -72,8 +75,8 @@ def save_parquet_with_metadata(
     df: pd.DataFrame,
     data_dir: Path,
     data_name: str,
-    timestamp: Optional[datetime] = None,
-    sub_dir: Optional[str] = None
+    timestamp: datetime | None = None,
+    sub_dir: str | None = None,
 ) -> Path:
     """
     Save DataFrame to parquet file with timestamp in filename.
@@ -120,9 +123,9 @@ def load_parquet(file_path: Path) -> pd.DataFrame:
 def get_or_fetch_data(
     data_name: str,
     fetch_func: Callable[[], pd.DataFrame],
-    data_dir: Optional[Path] = None,
+    data_dir: Path | None = None,
     force_refresh: bool = False,
-    sub_dir: Optional[str] = None
+    sub_dir: str | None = None,
 ) -> tuple[pd.DataFrame, bool]:
     """
     Get data from cache if up to date, otherwise fetch and save.
@@ -156,10 +159,10 @@ def merge_and_fetch_ts_data(
     data_name: str,
     fetch_func: Callable[[], pd.DataFrame],
     date_cols: list[str] | str = "trade_date",
-    data_dir: Optional[Path] = None,
+    data_dir: Path | None = None,
     force_refresh: bool = False,
-    unique_key: Optional[list[str] | str] = None,
-    sub_dir: Optional[str] = None
+    unique_key: list[str] | str | None = None,
+    sub_dir: str | None = None,
 ) -> tuple[pd.DataFrame, bool]:
     """
     Get time-series data, merge with existing cache if available.
@@ -212,6 +215,11 @@ def merge_and_fetch_ts_data(
             merged_df = merged_df.drop_duplicates(subset=date_cols_list, keep="last")
     else:
         merged_df = new_df
+
+    # Sort by date ascending (oldest first)
+    date_cols_list = [date_cols] if isinstance(date_cols, str) else date_cols
+    if date_cols_list:
+        merged_df = merged_df.sort_values(date_cols_list).reset_index(drop=True)
 
     # Save merged data
     save_parquet_with_metadata(merged_df, data_dir, data_name, sub_dir=sub_dir)

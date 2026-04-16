@@ -17,6 +17,16 @@ etf_quat/
 │   ├── base.py             # Task 抽象基类
 │   ├── scheduler.py        # 任务调度器
 │   └── fetch_tasks.py      # 数据获取任务
+├── backtest/                # 回测框架模块
+│   ├── engine.py           # 回测引擎
+│   ├── data.py             # 数据馈送
+│   ├── strategy.py         # 策略基类
+│   ├── portfolio.py        # 投资组合管理
+│   ├── order.py            # 订单/交易管理
+│   └── metrics.py          # 绩效指标计算
+├── examples/                # 示例策略
+│   ├── turtle_strategy.py  # 海龟策略实现
+│   └── backtest_mainboard.py  # 主板股票回测脚本
 └── scripts/
     └── daily_run.py        # 日常运行脚本
 ```
@@ -50,6 +60,21 @@ uv run -m scripts.daily_run \
     --force-refresh
 ```
 
+### 回测
+
+```bash
+# 回测海龟策略（限制 10 只股票测试）
+uv run -m examples.backtest_mainboard --limit 10
+
+# 完整参数
+uv run -m examples.backtest_mainboard \
+    --limit 100 \
+    --days 5000 \
+    --entry-period 10 \
+    --exit-period 5 \
+    --include-st
+```
+
 ## 数据缓存
 
 数据按类型分层存储，以 Parquet 格式缓存在 `data/` 目录：
@@ -59,6 +84,7 @@ data/
 ├── stock_list/          # 股票列表
 ├── trade_cal/           # 交易日历
 ├── daily_basic/         # 日频指标
+├── daily/               # 日线 OHLC 数据
 ├── index_daily/         # 指数日线
 └── fund/                # 基金数据
 ```

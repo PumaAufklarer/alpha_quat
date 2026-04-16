@@ -1,16 +1,17 @@
 """
 Performance metrics calculation for backtesting.
 """
-from dataclasses import dataclass
-from typing import List, Dict
 
-import pandas as pd
+from dataclasses import dataclass
+
 import numpy as np
+import pandas as pd
 
 
 @dataclass
 class Metrics:
     """Performance metrics container."""
+
     total_return: float = 0.0
     annual_return: float = 0.0
     volatility: float = 0.0
@@ -20,7 +21,7 @@ class Metrics:
     total_trades: int = 0
 
     @classmethod
-    def calculate(cls, equity_history: List[Dict], risk_free_rate: float = 0.03) -> "Metrics":
+    def calculate(cls, equity_history: list[dict], risk_free_rate: float = 0.03) -> "Metrics":
         """
         Calculate performance metrics from equity history.
 
@@ -68,10 +69,10 @@ class Metrics:
             annual_return=annual_return,
             volatility=volatility,
             sharpe_ratio=sharpe_ratio,
-            max_drawdown=max_drawdown
+            max_drawdown=max_drawdown,
         )
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Convert metrics to dictionary."""
         return {
             "total_return": self.total_return,
@@ -80,5 +81,5 @@ class Metrics:
             "sharpe_ratio": self.sharpe_ratio,
             "max_drawdown": self.max_drawdown,
             "win_rate": self.win_rate,
-            "total_trades": self.total_trades
+            "total_trades": self.total_trades,
         }

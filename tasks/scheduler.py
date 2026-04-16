@@ -1,6 +1,7 @@
 """Task scheduler for sequential execution."""
-from typing import List, Any
+
 import logging
+from typing import Any
 
 from .base import Task
 
@@ -19,9 +20,9 @@ class Scheduler:
         Args:
             stop_on_error: If True, stop execution when a task fails
         """
-        self.tasks: List[Task] = []
+        self.tasks: list[Task] = []
         self.stop_on_error = stop_on_error
-        self.results: List[Any] = []
+        self.results: list[Any] = []
 
     def add_task(self, task: Task) -> "Scheduler":
         """
@@ -36,7 +37,7 @@ class Scheduler:
         self.tasks.append(task)
         return self
 
-    def add_tasks(self, tasks: List[Task]) -> "Scheduler":
+    def add_tasks(self, tasks: list[Task]) -> "Scheduler":
         """
         Add multiple tasks to the scheduler.
 
@@ -49,7 +50,7 @@ class Scheduler:
         self.tasks.extend(tasks)
         return self
 
-    def run(self) -> List[Any]:
+    def run(self) -> list[Any]:
         """
         Run all tasks sequentially.
 
@@ -64,7 +65,7 @@ class Scheduler:
             try:
                 result = task()
                 self.results.append(result)
-            except Exception as e:
+            except Exception:
                 logger.error(f"Task {i}/{len(self.tasks)} failed: {task.name}")
                 self.results.append(None)
                 if self.stop_on_error:

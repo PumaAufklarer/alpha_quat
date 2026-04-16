@@ -1,7 +1,9 @@
 """Tushare API wrapper with rate limit handling and pagination."""
-import time
+
 import logging
-from typing import Callable, Any
+import time
+from collections.abc import Callable
+from typing import Any
 
 import pandas as pd
 
@@ -54,7 +56,7 @@ class TushareAPI:
                 error_msg = str(e)
                 if "最多访问" in error_msg.lower():
                     retries += 1
-                    sleep_time = self.base_sleep_time * (2 ** retries)  # 指数退避
+                    sleep_time = self.base_sleep_time * (2**retries)  # 指数退避
                     logger.warning(
                         f"Rate limit hit, retrying in {sleep_time:.1f}s "
                         f"(attempt {retries}/{self.max_retries})"
@@ -77,6 +79,7 @@ class TushareAPI:
         Returns:
             Result DataFrame
         """
+
         def api_call():
             return self.pro.query(api_name, **kwargs)
 
@@ -90,7 +93,7 @@ class TushareAPI:
         start_date: str = "",
         trade_date: str = "",
         date_column: str = "trade_date",
-        max_rows_per_request: int = 6000
+        max_rows_per_request: int = 6000,
     ) -> pd.DataFrame:
         """
         Fetch data with pagination until we get the latest data.

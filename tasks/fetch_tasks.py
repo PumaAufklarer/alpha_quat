@@ -1,10 +1,12 @@
 """Data fetching tasks."""
-from typing import Any
+
 import logging
+from typing import Any
 
 import pandas as pd
 
 from data_fetcher import DataSource
+
 from .base import Task
 
 logger = logging.getLogger(__name__)
@@ -13,7 +15,13 @@ logger = logging.getLogger(__name__)
 class FetchStockListTask(Task):
     """Task to fetch stock list."""
 
-    def __init__(self, ds: DataSource, exchange: str = "", list_status: str = "L", force_refresh: bool = False):
+    def __init__(
+        self,
+        ds: DataSource,
+        exchange: str = "",
+        list_status: str = "L",
+        force_refresh: bool = False,
+    ):
         super().__init__("fetch_stock_list")
         self.ds = ds
         self.exchange = exchange
@@ -22,9 +30,7 @@ class FetchStockListTask(Task):
 
     def run(self) -> pd.DataFrame:
         df, is_cached = self.ds.get_stock_list(
-            exchange=self.exchange,
-            list_status=self.list_status,
-            force_refresh=self.force_refresh
+            exchange=self.exchange, list_status=self.list_status, force_refresh=self.force_refresh
         )
         logger.info(f"Fetched {len(df)} stocks (cached: {is_cached})")
         return df
@@ -33,7 +39,14 @@ class FetchStockListTask(Task):
 class FetchDailyBasicTask(Task):
     """Task to fetch daily basic data for a stock."""
 
-    def __init__(self, ds: DataSource, ts_code: str, start_date: str = "", end_date: str = "", force_refresh: bool = False):
+    def __init__(
+        self,
+        ds: DataSource,
+        ts_code: str,
+        start_date: str = "",
+        end_date: str = "",
+        force_refresh: bool = False,
+    ):
         super().__init__(f"fetch_daily_basic_{ts_code}")
         self.ds = ds
         self.ts_code = ts_code
@@ -46,7 +59,7 @@ class FetchDailyBasicTask(Task):
             ts_code=self.ts_code,
             start_date=self.start_date,
             end_date=self.end_date,
-            force_refresh=self.force_refresh
+            force_refresh=self.force_refresh,
         )
         logger.info(f"Fetched {len(df)} records for {self.ts_code} (cached: {is_cached})")
         return df
@@ -68,7 +81,7 @@ class FetchAllTask(Task):
         list_status: str = "L",
         force_refresh: bool = False,
         limit: int | None = None,
-        markets: list[str] | None = None
+        markets: list[str] | None = None,
     ):
         super().__init__("fetch_all")
         self.ds = ds
@@ -89,7 +102,7 @@ class FetchAllTask(Task):
             self.ds,
             exchange=self.exchange,
             list_status=self.list_status,
-            force_refresh=self.force_refresh
+            force_refresh=self.force_refresh,
         )
         stock_df = stock_list_task.run()
         results["stock_list"] = stock_df
@@ -128,7 +141,7 @@ class FetchAllTask(Task):
                     ts_code=ts_code,
                     start_date=self.start_date,
                     end_date=self.end_date,
-                    force_refresh=self.force_refresh
+                    force_refresh=self.force_refresh,
                 )
                 daily_df = daily_task.run()
                 if not daily_df.empty:

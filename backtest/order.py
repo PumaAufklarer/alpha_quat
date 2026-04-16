@@ -1,6 +1,7 @@
 """
 Order and execution management.
 """
+
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
@@ -8,12 +9,14 @@ from enum import Enum
 
 class OrderType(Enum):
     """Order type enum."""
+
     MARKET = "market"
     LIMIT = "limit"
 
 
 class OrderStatus(Enum):
     """Order status enum."""
+
     PENDING = "pending"
     FILLED = "filled"
     CANCELLED = "cancelled"
@@ -23,6 +26,7 @@ class OrderStatus(Enum):
 @dataclass
 class Order:
     """Order class."""
+
     ts_code: str
     quantity: int
     order_type: OrderType
@@ -42,6 +46,7 @@ class Order:
 @dataclass
 class Trade:
     """Trade record class."""
+
     ts_code: str
     quantity: int
     price: float
