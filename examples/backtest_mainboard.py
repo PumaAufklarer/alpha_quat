@@ -56,19 +56,28 @@ def parse_args():
         "--days", type=int, default=5000, help="Number of days to backtest (default: 500)"
     )
     parser.add_argument(
-        "--entry-period", type=int, default=10, help="Entry breakout period (default: 10)"
+        "--entry-period", type=int, default=20, help="Entry breakout period (default: 20)"
     )
     parser.add_argument(
-        "--exit-period", type=int, default=5, help="Exit breakout period (default: 5)"
+        "--exit-period", type=int, default=10, help="Exit breakout period (default: 10)"
     )
     parser.add_argument(
         "--include-st", action="store_true", help="Include ST stocks (default: exclude ST stocks)"
+    )
+    parser.add_argument(
+        "--use-atr", action="store_true", help="Use ATR for position sizing (default: False)"
     )
     return parser.parse_args()
 
 
 def backtest_single_stock(
-    ds: DataSource, ts_code: str, name: str, days: int, entry_period: int, exit_period: int
+    ds: DataSource,
+    ts_code: str,
+    name: str,
+    days: int,
+    entry_period: int,
+    exit_period: int,
+    use_atr: bool,
 ) -> dict:
     """Backtest single stock and return results."""
     # Fetch daily OHLC data
@@ -77,11 +86,17 @@ def backtest_single_stock(
     if daily_df.empty:
         return None
 
-    # Prepare data
-    stock_df = prepare_single_stock_data(daily_df, ts_code)
+    # Prepare data with pre-computed features
+    stock_df = prepare_single_stock_data(
+        daily_df,
+        ts_code,
+        entry_period=entry_period,
+        exit_period=exit_period,
+    )
     stock_df = stock_df.tail(days).reset_index(drop=True)
 
-    if len(stock_df) < entry_period:
+    min_required = max(entry_period, exit_period) + 1
+    if len(stock_df) < min_required:
         return None
 
     # Create data feed
@@ -90,7 +105,12 @@ def backtest_single_stock(
     # Create portfolio and strategy
     initial_cash = 100000.0
     portfolio = Portfolio(initial_cash=initial_cash)
-    strategy = TurtleStrategy(entry_period=entry_period, exit_period=exit_period, position_size=100)
+    strategy = TurtleStrategy(
+        entry_period=entry_period,
+        exit_period=exit_period,
+        position_size=100,
+        use_atr=use_atr,
+    )
 
     # Run backtest
     engine = BacktestEngine(data=data_feed, strategy=strategy, portfolio=portfolio)
@@ -115,8 +135,12 @@ def main():
     args = parse_args()
 
     logger.info("=" * 60)
-    logger.info("Turtle Strategy Backtest - Main Board")
+    logger.info("Turtle Strategy Backtest (with Feature Engineering) - Main Board")
     logger.info("=" * 60)
+    logger.info(f"Configuration:")
+    logger.info(f"  Entry period: {args.entry_period}")
+    logger.info(f"  Exit period: {args.exit_period}")
+    logger.info(f"  Use ATR sizing: {args.use_atr}")
 
     # Initialize data source
     logger.info("Initializing data source...")
@@ -154,6 +178,7 @@ def main():
                 days=args.days,
                 entry_period=args.entry_period,
                 exit_period=args.exit_period,
+                use_atr=args.use_atr,
             )
             if result:
                 results.append(result)

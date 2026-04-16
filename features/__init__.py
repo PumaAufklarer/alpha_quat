@@ -5,7 +5,7 @@ Feature engineering module for quantitative trading.
 from .base import FeatureBase
 from .basic import LogReturns, Returns, Volatility
 from .pipeline import FeaturePipeline
-from .technical import ATR, EMA, MACD, RSI, SMA, BollingerBands
+from .technical import ATR, EMA, MACD, RSI, SMA, BollingerBands, DonchianChannels
 
 __all__ = [
     "FeatureBase",
@@ -18,5 +18,6 @@ __all__ = [
     "MACD",
     "BollingerBands",
     "ATR",
+    "DonchianChannels",
     "FeaturePipeline",
 ]

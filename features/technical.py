@@ -7,6 +7,65 @@ import pandas as pd
 from .base import FeatureBase
 
 
+class DonchianChannels(FeatureBase):
+    """
+    Donchian Channels - highest high and lowest low over a lookback period.
+
+    Used in Turtle Trading Strategy.
+    """
+
+    def __init__(
+        self, high_col: str = "high", low_col: str = "low", period: int = 20
+    ):
+        """
+        Initialize Donchian Channels feature.
+
+        Args:
+            high_col: Column name for high prices
+            low_col: Column name for low prices
+            period: Lookback period
+        """
+        self.high_col = high_col
+        self.low_col = low_col
+        self.period = period
+
+    @property
+    def name(self) -> str:
+        """Get the name of this feature."""
+        return f"donchian_{self.period}"
+
+    @property
+    def inputs(self) -> list[str]:
+        """Get the list of input column names required."""
+        return [self.high_col, self.low_col]
+
+    def calculate(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Calculate Donchian Channels and add to DataFrame.
+
+        Adds two columns:
+        - donchian_{period}_upper: Highest high over period (excluding current bar)
+        - donchian_{period}_lower: Lowest low over period (excluding current bar)
+
+        Args:
+            df: Input DataFrame with required columns
+
+        Returns:
+            DataFrame with feature columns added
+        """
+        result_df = df.copy()
+
+        # Calculate rolling highest high and lowest low (shifted to exclude current bar)
+        result_df[f"{self.name}_upper"] = (
+            result_df[self.high_col].rolling(window=self.period).max().shift(1)
+        )
+        result_df[f"{self.name}_lower"] = (
+            result_df[self.low_col].rolling(window=self.period).min().shift(1)
+        )
+
+        return result_df
+
+
 class SMA(FeatureBase):
     """Simple Moving Average."""
 
