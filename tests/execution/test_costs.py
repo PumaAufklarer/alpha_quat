@@ -1,9 +1,7 @@
 """Tests for cost models."""
 
 from alpha_quat.execution.costs import (
-    CostModel,
     AShareCostModel,
-    SlippageModel,
     FixedSlippageModel,
     PercentageSlippageModel,
 )

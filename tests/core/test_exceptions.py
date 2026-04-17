@@ -4,8 +4,8 @@ from alpha_quat.core.exceptions import (
     AlphaQuatError,
     InsufficientFundsError,
     InsufficientPositionError,
-    RiskLimitExceededError,
     InvalidOrderError,
+    RiskLimitExceededError,
 )
 
 

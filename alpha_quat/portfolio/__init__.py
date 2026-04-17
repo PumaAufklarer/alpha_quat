@@ -1,6 +1,6 @@
 """Portfolio layer."""
 
-from .position import Position
 from .portfolio import Portfolio
+from .position import Position
 
 __all__ = ["Position", "Portfolio"]

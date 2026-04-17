@@ -1,13 +1,14 @@
 """Tests for event definitions."""
 
 from datetime import datetime
+
 from alpha_quat.core.events import (
+    DecisionPointEvent,
     Event,
     EventType,
     MarketCloseEvent,
-    DecisionPointEvent,
-    OrderPlacementEvent,
     MarketOpenEvent,
+    OrderPlacementEvent,
 )
 
 

@@ -1,7 +1,8 @@
 """Tests for DataFeed implementations."""
 
 import pandas as pd
-from alpha_quat.data.feed import PandasDataFeed, MultiAssetDataFeed
+
+from alpha_quat.data.feed import MultiAssetDataFeed, PandasDataFeed
 
 
 def test_pandas_data_feed():

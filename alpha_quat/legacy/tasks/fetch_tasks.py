@@ -4,7 +4,6 @@ import logging
 from typing import Any
 
 import pandas as pd
-
 from data_fetcher import DataSource
 
 from .base import Task
