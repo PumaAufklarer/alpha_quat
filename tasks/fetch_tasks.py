@@ -29,10 +29,13 @@ class FetchStockListTask(Task):
         self.force_refresh = force_refresh
 
     def run(self) -> pd.DataFrame:
-        df, is_cached = self.ds.get_stock_list(
+        df, is_fully_cached = self.ds.get_stock_list(
             exchange=self.exchange, list_status=self.list_status, force_refresh=self.force_refresh
         )
-        logger.info(f"Fetched {len(df)} stocks (cached: {is_cached})")
+        if is_fully_cached:
+            logger.info(f"Fetched {len(df)} stocks (using latest cache)")
+        else:
+            logger.info(f"Fetched {len(df)} stocks (freshly fetched)")
         return df
 
 
@@ -55,13 +58,16 @@ class FetchDailyBasicTask(Task):
         self.force_refresh = force_refresh
 
     def run(self) -> pd.DataFrame:
-        df, is_cached = self.ds.get_daily_basic(
+        df, is_fully_cached = self.ds.get_daily_basic(
             ts_code=self.ts_code,
             start_date=self.start_date,
             end_date=self.end_date,
             force_refresh=self.force_refresh,
         )
-        logger.info(f"Fetched {len(df)} records for {self.ts_code} (cached: {is_cached})")
+        if is_fully_cached:
+            logger.info(f"Fetched {len(df)} records for {self.ts_code} (using latest cache)")
+        else:
+            logger.info(f"Fetched {len(df)} records for {self.ts_code} (freshly fetched/updated)")
         return df
 
 
@@ -87,7 +93,7 @@ class FetchDailyTask(Task):
         self.force_refresh = force_refresh
 
     def run(self) -> pd.DataFrame:
-        df, is_cached = self.ds.get_daily(
+        df, is_fully_cached = self.ds.get_daily(
             ts_code=self.ts_code,
             start_date=self.start_date,
             end_date=self.end_date,
@@ -95,7 +101,14 @@ class FetchDailyTask(Task):
             force_refresh=self.force_refresh,
         )
         adj_str = self.adj if self.adj else "unadjusted"
-        logger.info(f"Fetched {len(df)} {adj_str} records for {self.ts_code} (cached: {is_cached})")
+        if is_fully_cached:
+            logger.info(
+                f"Fetched {len(df)} {adj_str} records for {self.ts_code} (using latest cache)"
+            )
+        else:
+            logger.info(
+                f"Fetched {len(df)} {adj_str} records for {self.ts_code} (freshly fetched/updated)"
+            )
         return df
 
 
@@ -104,6 +117,7 @@ class FetchAllTask(Task):
     Task to fetch all data:
     1. Fetch stock list
     2. Fetch daily basic for each stock
+    3. Fetch daily OHLC for each stock
     """
 
     def __init__(
