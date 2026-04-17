@@ -16,6 +16,14 @@ from .events import (
     OrderPlacementEvent,
     MarketOpenEvent,
 )
+from .exceptions import (
+    AlphaQuatError,
+    InsufficientFundsError,
+    InsufficientPositionError,
+    RiskLimitExceededError,
+    InvalidOrderError,
+    DataError,
+)
 
 __all__ = [
     # Types
@@ -32,4 +40,11 @@ __all__ = [
     "DecisionPointEvent",
     "OrderPlacementEvent",
     "MarketOpenEvent",
+    # Exceptions
+    "AlphaQuatError",
+    "InsufficientFundsError",
+    "InsufficientPositionError",
+    "RiskLimitExceededError",
+    "InvalidOrderError",
+    "DataError",
 ]
