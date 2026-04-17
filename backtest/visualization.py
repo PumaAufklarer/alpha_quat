@@ -2,6 +2,7 @@
 Backtest result visualization plotting.
 """
 
+from collections import defaultdict
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -18,7 +19,8 @@ class BacktestPlotter:
     Generates various charts from backtest results, including:
     - Equity curve
     - Drawdown curve
-    - Price with buy/sell markers
+    - Price with buy/sell markers (single asset)
+    - Trade overview (multi-asset)
     - Composite report
     """
 
@@ -95,7 +97,7 @@ class BacktestPlotter:
         ax.grid(True, alpha=0.3)
 
     def _plot_trades_to_ax(self, ax: plt.Axes) -> None:
-        """Plot price with trades to given axes."""
+        """Plot price with trades to given axes (single asset mode)."""
         if self.price_data is None or self.price_data.empty:
             ax.text(
                 0.5,
@@ -194,6 +196,69 @@ class BacktestPlotter:
 
         ax.set_title(f"Trades for {ts_code}", fontsize=12, fontweight="bold", pad=10)
         ax.grid(True, alpha=0.3)
+
+    def _plot_trade_overview_to_ax(self, ax: plt.Axes) -> None:
+        """Plot trade overview to given axes (multi-asset mode)."""
+        trades = self.result.trades
+        if not trades:
+            ax.text(
+                0.5,
+                0.5,
+                "No trades executed",
+                ha="center",
+                va="center",
+                fontsize=12,
+                transform=ax.transAxes,
+            )
+            ax.set_title("Trade Overview", fontsize=12, fontweight="bold", pad=10)
+            return
+
+        # Group trades by asset
+        trades_by_asset = defaultdict(list)
+        for trade in trades:
+            trades_by_asset[trade.ts_code].append(trade)
+
+        # Sort assets by number of trades (descending)
+        sorted_assets = sorted(
+            trades_by_asset.keys(), key=lambda x: len(trades_by_asset[x]), reverse=True
+        )
+
+        # Prepare data for bar chart
+        assets = []
+        buy_counts = []
+        sell_counts = []
+
+        for ts_code in sorted_assets[:10]:  # Show top 10 assets
+            asset_trades = trades_by_asset[ts_code]
+            buys = sum(1 for t in asset_trades if t.quantity > 0)
+            sells = sum(1 for t in asset_trades if t.quantity < 0)
+            assets.append(ts_code)
+            buy_counts.append(buys)
+            sell_counts.append(sells)
+
+        # Plot bar chart
+        x = range(len(assets))
+        width = 0.35
+
+        ax.bar(
+            [xi - width / 2 for xi in x], buy_counts, width, label="Buy", color="#e74c3c", alpha=0.7
+        )
+        ax.bar(
+            [xi + width / 2 for xi in x],
+            sell_counts,
+            width,
+            label="Sell",
+            color="#27ae60",
+            alpha=0.7,
+        )
+
+        ax.set_xlabel("Asset", fontsize=10)
+        ax.set_ylabel("Number of Trades", fontsize=10)
+        ax.set_title("Trade Overview by Asset", fontsize=12, fontweight="bold", pad=10)
+        ax.set_xticks(x)
+        ax.set_xticklabels(assets, rotation=45, ha="right")
+        ax.legend()
+        ax.grid(True, alpha=0.3, axis="y")
 
     def _plot_metrics_card_to_ax(self, ax: plt.Axes) -> None:
         """Plot metrics card to given axes."""
@@ -314,7 +379,7 @@ class BacktestPlotter:
 
     def plot_trades_on_price(self, save_path: str | Path | None = None, dpi: int = 150) -> Figure:
         """
-        Plot price chart with buy/sell markers.
+        Plot price chart with buy/sell markers (single asset only).
 
         Args:
             save_path: Path to save the figure (optional)
@@ -344,6 +409,251 @@ class BacktestPlotter:
 
         return fig
 
+    def plot_trade_overview(self, save_path: str | Path | None = None, dpi: int = 150) -> Figure:
+        """
+        Plot trade overview by asset (multi-asset mode).
+
+        Args:
+            save_path: Path to save the figure (optional)
+            dpi: DPI for saved figure
+
+        Returns:
+            Matplotlib Figure object
+        """
+        fig, ax = plt.subplots(figsize=(12, 6))
+        self._plot_trade_overview_to_ax(ax)
+        ax.set_title("Trade Overview", fontsize=14, fontweight="bold", pad=20)
+        plt.tight_layout()
+
+        if save_path:
+            fig.savefig(save_path, dpi=dpi, bbox_inches="tight")
+
+        return fig
+
+    def plot_multi_asset_trades(
+        self, save_path: str | Path | None = None, dpi: int = 150, max_assets: int = 6
+    ) -> Figure:
+        """
+        Plot price charts with buy/sell markers for multiple assets.
+
+        Args:
+            save_path: Path to save the figure (optional)
+            dpi: DPI for saved figure
+            max_assets: Maximum number of assets to display
+
+        Returns:
+            Matplotlib Figure object
+        """
+        if self.price_data is None or self.price_data.empty:
+            fig, ax = plt.subplots(figsize=(12, 6))
+            ax.text(
+                0.5,
+                0.5,
+                "No price data available",
+                ha="center",
+                va="center",
+                fontsize=12,
+                transform=ax.transAxes,
+            )
+            ax.set_title("Multi-Asset Trades", fontsize=14, fontweight="bold", pad=20)
+            plt.tight_layout()
+            if save_path:
+                fig.savefig(save_path, dpi=dpi, bbox_inches="tight")
+            return fig
+
+        # Get unique assets
+        if "ts_code" not in self.price_data.columns:
+            # If no ts_code column, treat as single asset
+            return self.plot_trades_on_price(save_path, dpi)
+
+        unique_assets = self.price_data["ts_code"].unique()
+
+        # Filter assets that have trades
+        assets_with_trades = set()
+        for trade in self.result.trades:
+            assets_with_trades.add(trade.ts_code)
+
+        # Prioritize assets with trades
+        assets_to_plot = [a for a in unique_assets if a in assets_with_trades]
+        # Add other assets if we have space
+        if len(assets_to_plot) < max_assets:
+            for a in unique_assets:
+                if a not in assets_to_plot and len(assets_to_plot) < max_assets:
+                    assets_to_plot.append(a)
+
+        num_assets = len(assets_to_plot)
+        if num_assets == 0:
+            fig, ax = plt.subplots(figsize=(12, 6))
+            ax.text(
+                0.5,
+                0.5,
+                "No assets with trades found",
+                ha="center",
+                va="center",
+                fontsize=12,
+                transform=ax.transAxes,
+            )
+            ax.set_title("Multi-Asset Trades", fontsize=14, fontweight="bold", pad=20)
+            plt.tight_layout()
+            if save_path:
+                fig.savefig(save_path, dpi=dpi, bbox_inches="tight")
+            return fig
+
+        # Calculate grid layout
+        cols = min(2, num_assets)
+        rows = (num_assets + cols - 1) // cols
+
+        fig_height = 4 * rows
+        fig = plt.figure(figsize=(16, fig_height))
+        gs = fig.add_gridspec(rows, cols, hspace=0.35, wspace=0.25)
+
+        # Prepare datetime column
+        df = self.price_data.copy()
+        if "trade_date" in df.columns:
+            df["datetime"] = pd.to_datetime(df["trade_date"])
+        elif "datetime" in df.columns:
+            df["datetime"] = pd.to_datetime(df["datetime"])
+        else:
+            df["datetime"] = pd.to_datetime(df.index)
+
+        df = df.sort_values("datetime")
+
+        for i, ts_code in enumerate(assets_to_plot):
+            row = i // cols
+            col = i % cols
+            ax = fig.add_subplot(gs[row, col])
+
+            # Filter data for this asset
+            asset_df = df[df["ts_code"] == ts_code]
+
+            if asset_df.empty:
+                ax.text(
+                    0.5,
+                    0.5,
+                    f"No data for {ts_code}",
+                    ha="center",
+                    va="center",
+                    fontsize=10,
+                    transform=ax.transAxes,
+                )
+                ax.set_title(ts_code, fontsize=11, fontweight="bold")
+                continue
+
+            # Plot price
+            if "close" in asset_df.columns:
+                ax.plot(
+                    asset_df["datetime"],
+                    asset_df["close"],
+                    linewidth=1.2,
+                    color="#34495e",
+                    label="Close",
+                )
+            elif "price" in asset_df.columns:
+                ax.plot(
+                    asset_df["datetime"],
+                    asset_df["price"],
+                    linewidth=1.2,
+                    color="#34495e",
+                    label="Price",
+                )
+
+            # Get trades for this asset
+            asset_trades = [t for t in self.result.trades if t.ts_code == ts_code]
+
+            if asset_trades:
+                # Calculate label offset
+                if "close" in asset_df.columns:
+                    price_min = asset_df["close"].min()
+                    price_max = asset_df["close"].max()
+                elif "price" in asset_df.columns:
+                    price_min = asset_df["price"].min()
+                    price_max = asset_df["price"].max()
+                else:
+                    price_min = min(t.price for t in asset_trades)
+                    price_max = max(t.price for t in asset_trades)
+
+                price_range = price_max - price_min if price_max > price_min else 1
+                label_offset = price_range * 0.05
+
+                buys = [t for t in asset_trades if t.quantity > 0]
+                sells = [t for t in asset_trades if t.quantity < 0]
+
+                if buys:
+                    buy_dates = [t.traded_at for t in buys]
+                    buy_prices = [t.price for t in buys]
+                    buy_qtys = [t.quantity for t in buys]
+                    ax.scatter(
+                        buy_dates,
+                        buy_prices,
+                        marker="^",
+                        color="#e74c3c",
+                        s=60,
+                        zorder=5,
+                        label="Buy",
+                        edgecolor="#c0392b",
+                    )
+                    # Only show labels if not too many
+                    if len(buys) <= 5:
+                        for dt, price, qty in zip(buy_dates, buy_prices, buy_qtys):
+                            ax.text(
+                                dt,
+                                price + label_offset,
+                                f"+{qty}",
+                                va="bottom",
+                                ha="center",
+                                fontsize=7,
+                                fontweight="bold",
+                                color="#c0392b",
+                            )
+
+                if sells:
+                    sell_dates = [t.traded_at for t in sells]
+                    sell_prices = [t.price for t in sells]
+                    sell_qtys = [abs(t.quantity) for t in sells]
+                    ax.scatter(
+                        sell_dates,
+                        sell_prices,
+                        marker="v",
+                        color="#27ae60",
+                        s=60,
+                        zorder=5,
+                        label="Sell",
+                        edgecolor="#1e8449",
+                    )
+                    # Only show labels if not too many
+                    if len(sells) <= 5:
+                        for dt, price, qty in zip(sell_dates, sell_prices, sell_qtys):
+                            ax.text(
+                                dt,
+                                price - label_offset,
+                                f"-{qty}",
+                                va="top",
+                                ha="center",
+                                fontsize=7,
+                                fontweight="bold",
+                                color="#1e8449",
+                            )
+
+                if buys or sells:
+                    ax.legend(loc="upper left", fontsize=8)
+
+            ax.set_title(ts_code, fontsize=11, fontweight="bold", pad=8)
+            ax.grid(True, alpha=0.3)
+            # Rotate dates
+            for label in ax.get_xticklabels():
+                label.set_rotation(30)
+                label.set_ha("right")
+
+        fig.suptitle(
+            "Multi-Asset Price Charts with Trades", fontsize=14, fontweight="bold", y=0.995
+        )
+        plt.subplots_adjust(top=0.93)
+
+        if save_path:
+            fig.savefig(save_path, dpi=dpi, bbox_inches="tight")
+
+        return fig
+
     def plot_composite_report(self, save_path: str | Path | None = None, dpi: int = 150) -> Figure:
         """
         Plot composite report with all charts and metrics.
@@ -355,33 +665,73 @@ class BacktestPlotter:
         Returns:
             Matplotlib Figure object
         """
-        fig = plt.figure(figsize=(16, 12))
-        gs = fig.add_gridspec(3, 2, hspace=0.3, wspace=0.25)
+        # Check if we have price data
+        has_price_data = self.price_data is not None and not self.price_data.empty
 
-        # 1. Equity Curve (top left)
-        ax1 = fig.add_subplot(gs[0, 0])
-        self._plot_equity_to_ax(ax1)
-        for label in ax1.get_xticklabels():
-            label.set_rotation(30)
-            label.set_ha("right")
+        # Check if it's multi-asset data (has multiple ts_codes)
+        is_multi_asset = False
+        if has_price_data and "ts_code" in self.price_data.columns:
+            is_multi_asset = self.price_data["ts_code"].nunique() > 1
 
-        # 2. Drawdown (top right)
-        ax2 = fig.add_subplot(gs[0, 1])
-        self._plot_drawdown_to_ax(ax2)
-        for label in ax2.get_xticklabels():
-            label.set_rotation(30)
-            label.set_ha("right")
+        if has_price_data and not is_multi_asset:
+            # Single asset mode: 2x2 layout
+            fig = plt.figure(figsize=(16, 12))
+            gs = fig.add_gridspec(3, 2, hspace=0.3, wspace=0.25)
 
-        # 3. Price with Trades (middle left)
-        ax3 = fig.add_subplot(gs[1, 0])
-        self._plot_trades_to_ax(ax3)
-        for label in ax3.get_xticklabels():
-            label.set_rotation(30)
-            label.set_ha("right")
+            # 1. Equity Curve (top left)
+            ax1 = fig.add_subplot(gs[0, 0])
+            self._plot_equity_to_ax(ax1)
+            for label in ax1.get_xticklabels():
+                label.set_rotation(30)
+                label.set_ha("right")
 
-        # 4. Metrics Card (middle right and bottom)
-        ax4 = fig.add_subplot(gs[1:, 1])
-        self._plot_metrics_card_to_ax(ax4)
+            # 2. Drawdown (top right)
+            ax2 = fig.add_subplot(gs[0, 1])
+            self._plot_drawdown_to_ax(ax2)
+            for label in ax2.get_xticklabels():
+                label.set_rotation(30)
+                label.set_ha("right")
+
+            # 3. Price with Trades (middle left)
+            ax3 = fig.add_subplot(gs[1, 0])
+            self._plot_trades_to_ax(ax3)
+            for label in ax3.get_xticklabels():
+                label.set_rotation(30)
+                label.set_ha("right")
+
+            # 4. Metrics Card (middle right and bottom)
+            ax4 = fig.add_subplot(gs[1:, 1])
+            self._plot_metrics_card_to_ax(ax4)
+        else:
+            # Multi-asset mode or no price data: 3x2 layout
+            fig = plt.figure(figsize=(16, 12))
+            gs = fig.add_gridspec(3, 2, hspace=0.3, wspace=0.25)
+
+            # 1. Equity Curve (top left, spans 2 columns)
+            ax1 = fig.add_subplot(gs[0, :])
+            self._plot_equity_to_ax(ax1)
+            ax1.set_title("Equity Curve", fontsize=14, fontweight="bold", pad=10)
+            for label in ax1.get_xticklabels():
+                label.set_rotation(30)
+                label.set_ha("right")
+
+            # 2. Drawdown (middle left)
+            ax2 = fig.add_subplot(gs[1, 0])
+            self._plot_drawdown_to_ax(ax2)
+            for label in ax2.get_xticklabels():
+                label.set_rotation(30)
+                label.set_ha("right")
+
+            # 3. Trade Overview (middle right)
+            ax3 = fig.add_subplot(gs[1, 1])
+            self._plot_trade_overview_to_ax(ax3)
+            for label in ax3.get_xticklabels():
+                label.set_rotation(45)
+                label.set_ha("right")
+
+            # 4. Metrics Card (bottom, spans 2 columns)
+            ax4 = fig.add_subplot(gs[2, :])
+            self._plot_metrics_card_to_ax(ax4)
 
         # Title for the whole report
         fig.suptitle("Backtest Composite Report", fontsize=16, fontweight="bold", y=0.995)
@@ -399,10 +749,13 @@ class BacktestPlotter:
             and not self.price_data.empty
             and "ts_code" in self.price_data.columns
         ):
+            # Check if it's multi-asset
+            if self.price_data["ts_code"].nunique() > 1:
+                return "multi_asset"
             ts_code = self.price_data["ts_code"].iloc[0]
             # Sanitize filename
             return ts_code.replace(".", "_")
-        return "unknown"
+        return "multi_asset"
 
     def save_all_plots(self, output_dir: str | Path, dpi: int = 150) -> dict[str, Path]:
         """
@@ -433,11 +786,40 @@ class BacktestPlotter:
         paths["drawdown"] = drawdown_path
         plt.close()
 
-        # Save trades on price
-        trades_path = output_path / f"trades_on_price_{ts_code}.png"
-        self.plot_trades_on_price(trades_path, dpi=dpi)
-        paths["trades_on_price"] = trades_path
-        plt.close()
+        # Check if it's multi-asset data
+        is_multi_asset = False
+        if (
+            self.price_data is not None
+            and not self.price_data.empty
+            and "ts_code" in self.price_data.columns
+        ):
+            is_multi_asset = self.price_data["ts_code"].nunique() > 1
+
+        # Save trades visualization
+        if self.price_data is not None and not self.price_data.empty:
+            if is_multi_asset:
+                # Multi-asset: save both trade overview and multi-asset trades chart
+                overview_path = output_path / f"trade_overview_{ts_code}.png"
+                self.plot_trade_overview(overview_path, dpi=dpi)
+                paths["trade_overview"] = overview_path
+                plt.close()
+
+                multi_asset_trades_path = output_path / f"multi_asset_trades_{ts_code}.png"
+                self.plot_multi_asset_trades(multi_asset_trades_path, dpi=dpi)
+                paths["multi_asset_trades"] = multi_asset_trades_path
+                plt.close()
+            else:
+                # Single asset: save trades on price
+                trades_path = output_path / f"trades_on_price_{ts_code}.png"
+                self.plot_trades_on_price(trades_path, dpi=dpi)
+                paths["trades_on_price"] = trades_path
+                plt.close()
+        else:
+            # No price data: save trade overview
+            overview_path = output_path / f"trade_overview_{ts_code}.png"
+            self.plot_trade_overview(overview_path, dpi=dpi)
+            paths["trade_overview"] = overview_path
+            plt.close()
 
         # Save composite report
         report_path = output_path / f"composite_report_{ts_code}.png"
