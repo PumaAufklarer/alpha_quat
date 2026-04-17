@@ -2,7 +2,7 @@
 Backtest framework for quantitative trading strategies.
 """
 
-from .data import DataFeed, PandasDataFeed
+from .data import DataFeed, MultiAssetDataFeed, PandasDataFeed
 from .engine import BacktestEngine, BacktestResult
 from .metrics import Metrics
 from .order import Order, OrderType, Trade
@@ -15,6 +15,7 @@ __all__ = [
     "BacktestResult",
     "DataFeed",
     "PandasDataFeed",
+    "MultiAssetDataFeed",
     "Strategy",
     "Portfolio",
     "Order",

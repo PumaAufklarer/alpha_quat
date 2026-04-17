@@ -61,3 +61,66 @@ class PandasDataFeed(DataFeed):
     def current_datetime(self) -> datetime | None:
         """Get the current datetime of the data feed."""
         return self._current_datetime
+
+
+class MultiAssetDataFeed(DataFeed):
+    """
+    Data feed for multiple assets.
+
+    Groups data by datetime, yields all assets for each datetime.
+    Each iteration returns a dict with:
+    - datetime: current datetime
+    - assets: dict of {ts_code: asset_data_dict}
+    """
+
+    def __init__(
+        self, df: pd.DataFrame, datetime_col: str = "trade_date", ts_code_col: str = "ts_code"
+    ):
+        """
+        Initialize multi-asset data feed.
+
+        Args:
+            df: DataFrame containing the data (must have datetime and ts_code columns)
+            datetime_col: Column name for datetime
+            ts_code_col: Column name for asset code
+        """
+        self.df = df.copy()
+        self.datetime_col = datetime_col
+        self.ts_code_col = ts_code_col
+
+        # Sort by datetime
+        self.df = self.df.sort_values(datetime_col).reset_index(drop=True)
+
+        # Group by datetime
+        self._grouped = list(self.df.groupby(datetime_col))
+        self._group_index = 0
+        self._current_datetime: datetime | None = None
+
+    def __iter__(self) -> Iterator[dict]:
+        """
+        Iterate over data, grouped by datetime.
+
+        Yields:
+            Dict with 'datetime' and 'assets' (dict of {ts_code: asset_data})
+        """
+        for self._group_index in range(len(self._grouped)):
+            dt, group = self._grouped[self._group_index]
+            self._current_datetime = dt
+
+            # Build assets dict
+            assets = {}
+            for _, row in group.iterrows():
+                ts_code = row[self.ts_code_col]
+                assets[ts_code] = row.to_dict()
+
+            yield {"datetime": dt, "assets": assets}
+
+    def reset(self) -> None:
+        """Reset the data feed to the beginning."""
+        self._group_index = 0
+        self._current_datetime = None
+
+    @property
+    def current_datetime(self) -> datetime | None:
+        """Get the current datetime of the data feed."""
+        return self._current_datetime
