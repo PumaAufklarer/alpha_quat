@@ -4,6 +4,8 @@
 /.claude/settings.local.json
 /.claude/cache
 /.ruff_cache
+/.pytest_cache
+/.mypy_cache
 /output
 /docs/superpowers
 config.json

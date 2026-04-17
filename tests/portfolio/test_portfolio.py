@@ -1,8 +1,7 @@
 """Tests for Position and Portfolio."""
 
-from datetime import datetime
-from alpha_quat.portfolio.position import Position
 from alpha_quat.portfolio.portfolio import Portfolio
+from alpha_quat.portfolio.position import Position
 
 
 def test_position_creation():

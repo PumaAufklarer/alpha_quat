@@ -1,11 +1,11 @@
 """Tests for order definitions."""
 
 from datetime import datetime
+
 from alpha_quat.execution.orders import (
-    OrderType,
-    OrderStatus,
-    TimeInForce,
     Order,
+    OrderStatus,
+    OrderType,
 )
 
 

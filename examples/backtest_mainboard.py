@@ -7,9 +7,9 @@ import argparse
 import logging
 
 import pandas as pd
-
 from backtest import BacktestEngine, DataFeed, Portfolio
 from data_fetcher import DataSource
+
 from examples import TurtleStrategy
 from examples.turtle_strategy import prepare_single_stock_data
 

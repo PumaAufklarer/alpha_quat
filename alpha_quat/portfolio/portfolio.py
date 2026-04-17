@@ -7,6 +7,7 @@ from datetime import datetime
 
 from alpha_quat.core import Currency
 from alpha_quat.execution import Trade
+
 from .position import Position
 
 
@@ -26,9 +27,7 @@ class Portfolio:
     @property
     def total_equity(self) -> Currency:
         """Calculate total portfolio equity (cash + market value)."""
-        market_value = sum(
-            p.market_value for p in self.positions.values() if not p.is_flat
-        )
+        market_value = sum(p.market_value for p in self.positions.values() if not p.is_flat)
         return Currency(self.current_cash + market_value)
 
     def update_price(self, ts_code: str, price: float) -> None:
@@ -65,32 +64,25 @@ class Portfolio:
 
         if qty_change > 0:
             # Buy
-            total_cost = float(position.avg_cost) * abs(
-                int(position.quantity)
-            ) + float(trade.price) * abs_qty
+            total_cost = (
+                float(position.avg_cost) * abs(int(position.quantity))
+                + float(trade.price) * abs_qty
+            )
             new_qty = int(position.quantity) + qty_change
             from alpha_quat.core import Price, Quantity
 
             position.quantity = Quantity(new_qty)
-            position.avg_cost = (
-                Price(total_cost / new_qty) if new_qty != 0 else Price(0.0)
-            )
-            self.current_cash = Currency(
-                float(self.current_cash) - float(trade.price) * abs_qty
-            )
+            position.avg_cost = Price(total_cost / new_qty) if new_qty != 0 else Price(0.0)
+            self.current_cash = Currency(float(self.current_cash) - float(trade.price) * abs_qty)
         else:
             # Sell - calculate realized P&L
             sell_qty = abs(qty_change)
             realized_pnl = (float(trade.price) - float(position.avg_cost)) * sell_qty
-            position.realized_pnl = Currency(
-                float(position.realized_pnl) + realized_pnl
-            )
+            position.realized_pnl = Currency(float(position.realized_pnl) + realized_pnl)
             from alpha_quat.core import Quantity
 
             position.quantity = Quantity(int(position.quantity) + qty_change)
-            self.current_cash = Currency(
-                float(self.current_cash) + float(trade.price) * sell_qty
-            )
+            self.current_cash = Currency(float(self.current_cash) + float(trade.price) * sell_qty)
 
     def record_equity(self, dt: datetime) -> None:
         """Record equity at a specific datetime."""

@@ -1,7 +1,10 @@
 """Tests for Bar data structures."""
 
 from datetime import datetime
+
 import pandas as pd
+
+from alpha_quat.core.types import Price
 from alpha_quat.data.bars import Bar, BarData
 
 
@@ -19,7 +22,7 @@ def test_bar_creation():
     )
     assert bar.ts_code == "000001.SZ"
     assert bar.close == 10.5
-    assert bar.typical_price == (10.0 + 11.0 + 9.5) / 3
+    assert bar.typical_price == Price((11.0 + 9.5 + 10.5) / 3)
 
 
 def test_bar_data_creation():

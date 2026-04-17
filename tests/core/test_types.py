@@ -1,7 +1,8 @@
 """Tests for core types."""
 
 from datetime import datetime
-from alpha_quat.core.types import Currency, Quantity, Price, Timestamp
+
+from alpha_quat.core.types import Currency, Price, Quantity, Timestamp
 
 
 def test_currency_type():
@@ -25,7 +26,7 @@ def test_price_type():
     """Test price type operations."""
     p1 = Price(10.5)
     p2 = Price(20.0)
-    assert p1 < p2 is True
+    assert p1 < p2
     assert float(p1) == 10.5
 
 

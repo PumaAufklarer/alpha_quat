@@ -4,7 +4,6 @@ Example script demonstrating the feature engineering module.
 
 import numpy as np
 import pandas as pd
-
 from features import (
     ATR,
     EMA,

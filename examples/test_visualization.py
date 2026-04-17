@@ -9,8 +9,8 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-
 from backtest import BacktestEngine, BacktestPlotter, PandasDataFeed, Portfolio
+
 from examples import TurtleStrategy
 from examples.turtle_strategy import prepare_single_stock_data
 
