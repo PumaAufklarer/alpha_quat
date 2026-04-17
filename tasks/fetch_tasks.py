@@ -186,14 +186,14 @@ class FetchAllTask(Task):
         for _, row in stocks_to_fetch.iterrows():
             ts_code = row["ts_code"]
             try:
-                daily_task = FetchDailyBasicTask(
+                daily_basic_task = FetchDailyBasicTask(
                     self.ds,
                     ts_code=ts_code,
                     start_date=self.start_date,
                     end_date=self.end_date,
                     force_refresh=self.force_refresh,
                 )
-                daily_df = daily_task.run()
+                daily_df = daily_basic_task.run()
                 if not daily_df.empty:
                     daily_basic_results.append(daily_df)
             except Exception as e:
