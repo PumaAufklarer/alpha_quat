@@ -1,8 +1,11 @@
 /.venv
 /data
-/.claude
+/.claude/settings.json
+/.claude/settings.local.json
+/.claude/cache
 /.ruff_cache
 /output
+/docs/superpowers
 config.json
 __pycache__/
 *.pyc
