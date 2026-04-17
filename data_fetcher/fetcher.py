@@ -11,7 +11,7 @@ from .tushare_api import TushareAPI
 class TushareFetcher:
     """Tushare data fetcher class."""
 
-    def __init__(self, config_path: str | None = None):
+    def __init__(self, config_path: str | Path | None = None):
         """
         Initialize TushareFetcher with token from config.
 
@@ -22,7 +22,7 @@ class TushareFetcher:
             # 默认在项目根目录查找config.json
             project_root = Path(__file__).parent.parent
             config_path = project_root / "config.json"
-        else:
+        elif isinstance(config_path, str):
             config_path = Path(config_path)
 
         if not config_path.exists():
