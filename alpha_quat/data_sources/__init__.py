@@ -8,6 +8,7 @@ from .base import (
     merge_and_fetch_ts_data,
 )
 from .stock import StockDataSource
+from .index import IndexDataSource
 
 __all__ = [
     "DataSourceBase",
@@ -16,4 +17,5 @@ __all__ = [
     "get_or_fetch_data",
     "merge_and_fetch_ts_data",
     "StockDataSource",
+    "IndexDataSource",
 ]
