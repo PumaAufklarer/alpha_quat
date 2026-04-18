@@ -7,11 +7,13 @@ from alpha_quat.universe.splitter import TimeSplitter
 
 def test_time_splitter_split():
     """Test TimeSplitter basic functionality."""
-    data = pd.DataFrame({
-        "ts_code": ["001", "001", "001", "001", "001"],
-        "trade_date": ["20190101", "20190601", "20200101", "20210101", "20220101"],
-        "close": [10, 11, 12, 13, 14],
-    })
+    data = pd.DataFrame(
+        {
+            "ts_code": ["001", "001", "001", "001", "001"],
+            "trade_date": ["20190101", "20190601", "20200101", "20210101", "20220101"],
+            "close": [10, 11, 12, 13, 14],
+        }
+    )
 
     splitter = TimeSplitter(date_column="trade_date")
     splits = splitter.split(
@@ -39,9 +41,11 @@ def test_time_splitter_split():
 
 def test_time_splitter_no_val():
     """Test TimeSplitter when val_end is same as train_end (no val set)."""
-    data = pd.DataFrame({
-        "trade_date": ["20190101", "20200101", "20210101"],
-    })
+    data = pd.DataFrame(
+        {
+            "trade_date": ["20190101", "20200101", "20210101"],
+        }
+    )
 
     splitter = TimeSplitter(date_column="trade_date")
     splits = splitter.split(

@@ -2,11 +2,11 @@
 
 from .base import Condition, Universe
 from .conditions import (
-    ValueCondition,
-    RangeCondition,
-    MarketCapCondition,
-    ListingDateCondition,
     IsSTCondition,
+    ListingDateCondition,
+    MarketCapCondition,
+    RangeCondition,
+    ValueCondition,
 )
 from .filters import Filter
 from .splitter import TimeSplitter

@@ -16,12 +16,12 @@ import logging
 import pandas as pd
 
 from alpha_quat.universe import (
-    Universe,
     Filter,
-    MarketCapCondition,
-    ListingDateCondition,
     IsSTCondition,
+    ListingDateCondition,
+    MarketCapCondition,
     TimeSplitter,
+    Universe,
     ValueCondition,
 )
 
@@ -34,26 +34,30 @@ logger = logging.getLogger(__name__)
 def create_sample_data() -> tuple[pd.DataFrame, pd.DataFrame]:
     """Create sample data for demonstration (doesn't require DataSource)."""
     # Sample stock list
-    stock_list = pd.DataFrame({
-        "ts_code": ["000001.SZ", "000002.SZ", "000004.SZ", "600000.SH", "600036.SH"],
-        "name": ["平安银行", "万科A", "ST国华", "浦发银行", "招商银行"],
-        "market": ["主板", "主板", "主板", "主板", "主板"],
-        "list_date": ["19910403", "19910129", "20000101", "19991110", "20020409"],
-    })
+    stock_list = pd.DataFrame(
+        {
+            "ts_code": ["000001.SZ", "000002.SZ", "000004.SZ", "600000.SH", "600036.SH"],
+            "name": ["平安银行", "万科A", "ST国华", "浦发银行", "招商银行"],
+            "market": ["主板", "主板", "主板", "主板", "主板"],
+            "list_date": ["19910403", "19910129", "20000101", "19991110", "20020409"],
+        }
+    )
 
     # Sample daily basic data
     trade_dates = ["20231201", "20231202", "20231203"]
     records = []
     for ts_code in stock_list["ts_code"]:
         for trade_date in trade_dates:
-            records.append({
-                "ts_code": ts_code,
-                "trade_date": trade_date,
-                "close": 10.0 + hash(ts_code) % 100,
-                "total_mv": 100.0 + hash(ts_code) % 900,
-                "pe": 10.0 + hash(ts_code) % 50,
-                "pb": 1.0 + hash(ts_code) % 10,
-            })
+            records.append(
+                {
+                    "ts_code": ts_code,
+                    "trade_date": trade_date,
+                    "close": 10.0 + hash(ts_code) % 100,
+                    "total_mv": 100.0 + hash(ts_code) % 900,
+                    "pe": 10.0 + hash(ts_code) % 50,
+                    "pb": 1.0 + hash(ts_code) % 10,
+                }
+            )
     daily_basic = pd.DataFrame(records)
 
     return stock_list, daily_basic
@@ -82,12 +86,14 @@ def main():
 
     # 3. Create filter conditions
     logger.info("Creating filter...")
-    filter = Filter([
-        MarketCapCondition(min_mv=200, max_mv=800),  # Market cap 20-80B
-        ListingDateCondition(min_days=365 * 5),  # Listed > 5 years
-        IsSTCondition(exclude=True),  # Exclude ST stocks
-        ValueCondition("pe", ">", 0),  # PE > 0 (profitable)
-    ])
+    filter = Filter(
+        [
+            MarketCapCondition(min_mv=200, max_mv=800),  # Market cap 20-80B
+            ListingDateCondition(min_days=365 * 5),  # Listed > 5 years
+            IsSTCondition(exclude=True),  # Exclude ST stocks
+            ValueCondition("pe", ">", 0),  # PE > 0 (profitable)
+        ]
+    )
     logger.info(f"Filter: {filter.name}")
 
     # 4. Apply filter
