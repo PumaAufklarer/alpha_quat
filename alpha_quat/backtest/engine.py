@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
@@ -10,11 +11,12 @@ import pandas as pd
 
 from alpha_quat.backtest.result import BacktestResult
 from alpha_quat.backtest.timeline import Timeline
-from alpha_quat.core import Currency
+from alpha_quat.core import Currency, Price, Quantity, SignalDirection
 from alpha_quat.data.feed import DataFeed
 from alpha_quat.execution.orders import Trade
 from alpha_quat.portfolio.portfolio import Portfolio
 from alpha_quat.strategy.generator import SignalGenerator
+from alpha_quat.strategy.signals import Signal
 
 
 @dataclass
@@ -33,6 +35,7 @@ class BacktestEngine:
     data_feed: DataFeed
     strategy: SignalGenerator
     initial_capital: float
+    default_position_size: int = 100
     portfolio: Portfolio = field(init=False)
     timeline: Timeline | None = field(init=False, default=None)
     _equity_history: list[tuple[datetime, float]] = field(init=False, default_factory=list)
@@ -91,8 +94,7 @@ class BacktestEngine:
             # Generate signals
             signals = self.strategy.generate(data_point)
 
-            # Simple execution: convert signals to trades (placeholder)
-            # In a real implementation, this would go through order management
+            # Simple execution: convert signals to trades
             self._execute_signals(signals, data_point, current_dt)
 
         # Finalize strategy
@@ -103,31 +105,108 @@ class BacktestEngine:
 
     def _update_portfolio_prices(self, data_point: dict[str, Any]) -> None:
         """Update portfolio prices based on market data."""
+        # 处理多资产格式（包含 "assets" 键）
         if "assets" in data_point:
             for ts_code, asset_data in data_point["assets"].items():
-                if ts_code in self.portfolio.positions:
-                    close_price = asset_data.get("close")
-                    if close_price is not None:
-                        position = self.portfolio.positions[ts_code]
-                        position.current_price = close_price
+                close_price = asset_data.get("close")
+                if close_price is not None:
+                    self.portfolio.update_price(ts_code, float(close_price))
+        # 处理单资产格式（直接包含 "ts_code" 和 "close"）
+        else:
+            ts_code = data_point.get("ts_code")
+            close_price = data_point.get("close")
+            if ts_code and close_price is not None:
+                self.portfolio.update_price(ts_code, float(close_price))
 
     def _execute_signals(
         self,
-        signals: list,
+        signals: list[Signal],
         data_point: dict[str, Any],
         timestamp: datetime,
     ) -> None:
         """
-        Execute signals (placeholder implementation).
+        Execute signals by creating trades and updating portfolio.
 
-        In a full implementation, this would:
-        - Convert signals to orders
-        - Check risk limits
-        - Route to order manager
-        - Match at next market open
+        Simple implementation:
+        - Immediately execute signals at current close price
+        - No slippage or transaction costs for simplicity
         """
-        # This is a simplified placeholder
-        pass
+        # 获取当前价格
+        close_price = None
+        ts_code = None
+
+        if "assets" in data_point:
+            # 多资产格式 - 为每个信号找对应资产
+            for signal in signals:
+                asset_data = data_point["assets"].get(signal.ts_code, {})
+                close_price = asset_data.get("close")
+                if close_price is not None:
+                    self._execute_single_signal(signal, Price(close_price), timestamp)
+        else:
+            # 单资产格式
+            ts_code = data_point.get("ts_code")
+            close_price = data_point.get("close")
+            if ts_code and close_price is not None:
+                for signal in signals:
+                    if signal.ts_code == ts_code:
+                        self._execute_single_signal(signal, Price(close_price), timestamp)
+
+    def _execute_single_signal(
+        self,
+        signal: Signal,
+        price: Price,
+        timestamp: datetime,
+    ) -> None:
+        """Execute a single signal and create a trade."""
+        position = self.portfolio.get_position(signal.ts_code)
+        current_qty = int(position.quantity)
+
+        # 确定交易数量
+        trade_qty = 0
+
+        if signal.direction == SignalDirection.LONG:
+            # 做多 - 默认使用 default_position_size
+            trade_qty = self.default_position_size
+        elif signal.direction == SignalDirection.SHORT:
+            # 做空 - 默认使用 default_position_size
+            trade_qty = -self.default_position_size
+        elif signal.direction == SignalDirection.EXIT_LONG:
+            # 平多 - 平掉当前多头
+            if current_qty > 0:
+                trade_qty = -current_qty
+        elif signal.direction == SignalDirection.EXIT_SHORT:
+            # 平空 - 平掉当前空头
+            if current_qty < 0:
+                trade_qty = -current_qty
+        elif signal.direction == SignalDirection.FLAT:
+            # 全平 - 平掉所有持仓
+            if current_qty != 0:
+                trade_qty = -current_qty
+
+        if trade_qty == 0:
+            return
+
+        # 检查是否有足够现金（买入时）
+        if trade_qty > 0:
+            cost = float(price) * abs(trade_qty)
+            if float(self.portfolio.current_cash) < cost:
+                return  # 现金不足，跳过
+
+        # 创建交易
+        trade = Trade(
+            trade_id=str(uuid.uuid4()),
+            order_id=str(uuid.uuid4()),
+            ts_code=signal.ts_code,
+            quantity=Quantity(trade_qty),
+            price=price,
+            traded_at=timestamp,
+            commission=Currency(0.0),
+            slippage=Price(0.0),
+        )
+
+        # 更新投资组合
+        self.portfolio.add_trade(trade)
+        self._trades.append(trade)
 
     def _create_result(self, start_date: datetime, end_date: datetime) -> BacktestResult:
         """Create backtest result from collected data."""
