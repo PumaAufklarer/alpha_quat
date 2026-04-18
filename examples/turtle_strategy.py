@@ -1,23 +1,32 @@
 """
-Turtle Trading Strategy implementation using feature engineering module.
+Turtle Trading Strategy implementation using new framework.
 """
 
+from __future__ import annotations
+
+from typing import Any
+
 import pandas as pd
-from backtest import OrderType, Strategy
-from features import ATR, DonchianChannels, FeaturePipeline
+
+from alpha_quat.core import SignalDirection
+from alpha_quat.features import ATR, DonchianChannels, FeaturePipeline
+from alpha_quat.strategy.generator import SignalGenerator
+from alpha_quat.strategy.signals import Signal
 
 
-class TurtleStrategy(Strategy):
+class TurtleStrategy(SignalGenerator):
     """
-    Turtle Trading Strategy using pre-computed features.
+    海龟交易策略 - 新框架版本
 
-    Entry rules:
-    - Long: Price breaks above entry-period Donchian upper band
-    - Short: Price breaks below entry-period Donchian lower band
+    使用 SignalGenerator 接口生成交易信号。
 
-    Exit rules:
-    - Long: Price breaks below exit-period Donchian lower band
-    - Short: Price breaks above exit-period Donchian upper band
+    入场规则:
+    - 做多: 价格突破入场周期唐奇安上轨
+    - 做空: 价格突破入场周期唐奇安下轨
+
+    出场规则:
+    - 做多: 价格跌破出场周期唐奇安下轨
+    - 做空: 价格突破出场周期唐奇安上轨
     """
 
     def __init__(
@@ -28,100 +37,112 @@ class TurtleStrategy(Strategy):
         use_atr: bool = False,
     ):
         """
-        Initialize turtle strategy.
+        初始化海龟策略
 
         Args:
-            entry_period: Period for entry breakout (default: 20)
-            exit_period: Period for exit breakout (default: 10)
-            position_size: Number of shares per trade (default: 100)
-            use_atr: Whether to use ATR for position sizing (default: False)
+            entry_period: 入场突破周期 (默认: 20)
+            exit_period: 出场突破周期 (默认: 10)
+            position_size: 每次交易的股数 (默认: 100)
+            use_atr: 是否使用 ATR 进行仓位管理 (默认: False)
         """
-        super().__init__()
         self.entry_period = entry_period
         self.exit_period = exit_period
         self.position_size = position_size
         self.use_atr = use_atr
+        self._portfolio_state: dict[str, int] = {}
 
-    @staticmethod
-    def create_feature_pipeline(entry_period: int, exit_period: int) -> FeaturePipeline:
+    def initialize(self) -> None:
+        """初始化策略状态"""
+        self._portfolio_state = {}
+
+    def generate(self, data: dict[str, Any]) -> list[Signal]:
         """
-        Create a feature pipeline for Turtle Strategy.
+        生成交易信号
 
         Args:
-            entry_period: Period for entry breakout
-            exit_period: Period for exit breakout
+            data: 包含市场数据和特征的字典
 
         Returns:
-            FeaturePipeline with required features
+            交易信号列表
         """
-        return FeaturePipeline(
-            [
-                DonchianChannels(period=entry_period),
-                DonchianChannels(period=exit_period),
-                ATR(period=14),
-            ]
-        )
+        signals: list[Signal] = []
 
-    def on_bar(self, bar: dict) -> None:
-        """
-        Called on each new bar of data.
-
-        Args:
-            bar: Current bar data as dictionary with pre-computed features
-        """
-        ts_code = bar.get("ts_code")
+        ts_code = data.get("ts_code")
         if not ts_code:
-            return
+            return signals
 
-        close = bar.get("close")
-        if not close:
-            return
+        close = data.get("close")
+        if not close or pd.isna(close):
+            return signals
 
-        # Get pre-computed Donchian channels from bar
-        entry_upper = bar.get(f"donchian_{self.entry_period}_upper")
-        entry_lower = bar.get(f"donchian_{self.entry_period}_lower")
-        exit_upper = bar.get(f"donchian_{self.exit_period}_upper")
-        exit_lower = bar.get(f"donchian_{self.exit_period}_lower")
+        # 获取唐奇安通道
+        entry_upper = data.get(f"donchian_{self.entry_period}_upper")
+        entry_lower = data.get(f"donchian_{self.entry_period}_lower")
+        exit_upper = data.get(f"donchian_{self.exit_period}_upper")
+        exit_lower = data.get(f"donchian_{self.exit_period}_lower")
 
-        # Skip if any required feature is missing
+        # 检查必需特征是否存在
         if any(v is None or pd.isna(v) for v in [entry_upper, entry_lower, exit_upper, exit_lower]):
-            return
+            return signals
 
-        # Get current position
-        position = self.portfolio.get_position(ts_code)
-        has_long = position.quantity > 0
-        has_short = position.quantity < 0
+        # 获取当前持仓状态
+        current_position = self._portfolio_state.get(ts_code, 0)
+        has_long = current_position > 0
+        has_short = current_position < 0
 
-        # Calculate position size
-        size = self.position_size
-        if self.use_atr:
-            atr = bar.get("atr_14")
-            if atr is not None and not pd.isna(atr) and atr > 0:
-                # Simple ATR-based sizing: 1% risk per trade
-                # Position size = (1% of equity) / ATR
-                risk_per_trade = self.portfolio.total_equity * 0.01
-                size = int(risk_per_trade / atr)
-                size = max(size, 10)  # Minimum 10 shares
-
-        # Trading logic - use current bar's close and pre-computed features
+        # 交易逻辑
         if not has_long and not has_short:
-            # No position, look for entry
+            # 无持仓，寻找入场机会
             if close > entry_upper:
-                # Breakout above entry high, go long
-                self.buy(ts_code, size, OrderType.MARKET)
+                # 突破上轨，做多
+                signals.append(
+                    Signal(
+                        ts_code=ts_code,
+                        direction=SignalDirection.LONG,
+                    )
+                )
+                # 更新内部状态
+                self._portfolio_state[ts_code] = self.position_size
             elif close < entry_lower:
-                # Breakout below entry low, go short
-                self.sell(ts_code, size, OrderType.MARKET)
+                # 突破下轨，做空
+                signals.append(
+                    Signal(
+                        ts_code=ts_code,
+                        direction=SignalDirection.SHORT,
+                    )
+                )
+                # 更新内部状态
+                self._portfolio_state[ts_code] = -self.position_size
         elif has_long:
-            # Long position, look for exit
+            # 持有多头，寻找出场机会
             if close < exit_lower:
-                # Exit long
-                self.sell(ts_code, position.quantity, OrderType.MARKET)
+                # 平多
+                signals.append(
+                    Signal(
+                        ts_code=ts_code,
+                        direction=SignalDirection.EXIT_LONG,
+                    )
+                )
+                # 更新内部状态
+                self._portfolio_state[ts_code] = 0
         elif has_short:
-            # Short position, look for exit
+            # 持有空头，寻找出场机会
             if close > exit_upper:
-                # Exit short
-                self.buy(ts_code, abs(position.quantity), OrderType.MARKET)
+                # 平空
+                signals.append(
+                    Signal(
+                        ts_code=ts_code,
+                        direction=SignalDirection.EXIT_SHORT,
+                    )
+                )
+                # 更新内部状态
+                self._portfolio_state[ts_code] = 0
+
+        return signals
+
+    def finalize(self) -> None:
+        """清理策略状态"""
+        self._portfolio_state = {}
 
 
 def prepare_single_stock_data(
@@ -131,27 +152,30 @@ def prepare_single_stock_data(
     exit_period: int = 10,
 ) -> pd.DataFrame:
     """
-    Prepare data for single stock backtesting with features pre-computed.
+    准备单股票回测数据，预计算特征
 
     Args:
-        df: Full daily DataFrame
-        ts_code: Stock code to filter
-        entry_period: Period for entry breakout
-        exit_period: Period for exit breakout
+        df: 完整的日线 DataFrame
+        ts_code: 股票代码
+        entry_period: 入场突破周期
+        exit_period: 出场突破周期
 
     Returns:
-        Filtered DataFrame sorted by date ascending with features added
+        过滤并排序后的 DataFrame，包含计算好的特征
     """
     stock_df = df[df["ts_code"] == ts_code].copy()
     if "trade_date" in stock_df.columns:
         stock_df["trade_date"] = pd.to_datetime(stock_df["trade_date"], format="%Y%m%d")
         stock_df = stock_df.sort_values("trade_date").reset_index(drop=True)
 
-    # Compute features using pipeline
-    pipeline = TurtleStrategy.create_feature_pipeline(
-        entry_period=entry_period,
-        exit_period=exit_period,
+    # 使用新的特征管道计算特征
+    pipeline = FeaturePipeline(
+        [
+            DonchianChannels(period=entry_period),
+            DonchianChannels(period=exit_period),
+            ATR(period=14),
+        ]
     )
-    stock_df = pipeline.calculate(stock_df)
 
+    stock_df = pipeline.calculate(stock_df)
     return stock_df

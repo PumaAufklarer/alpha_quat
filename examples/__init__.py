@@ -2,6 +2,6 @@
 Example strategies for backtesting.
 """
 
-from .turtle_strategy import TurtleStrategy
+from .turtle_strategy import TurtleStrategy, prepare_single_stock_data
 
-__all__ = ["TurtleStrategy"]
+__all__ = ["TurtleStrategy", "prepare_single_stock_data"]
