@@ -14,14 +14,14 @@ class Currency(float):
         return float.__new__(cls, round(value, 4))
 
     def __repr__(self) -> str:
-        return f"Currency({self:.4f})"
+        return f"Currency({float(self):.4f})"
 
 
 class Quantity(int):
     """Quantity (shares/contracts) type."""
 
     def __repr__(self) -> str:
-        return f"Quantity({self})"
+        return f"Quantity({int(self)})"
 
 
 class Price(float):
@@ -31,7 +31,7 @@ class Price(float):
         return float.__new__(cls, round(value, 4))
 
     def __repr__(self) -> str:
-        return f"Price({self:.4f})"
+        return f"Price({float(self):.4f})"
 
 
 @dataclass(frozen=True)
