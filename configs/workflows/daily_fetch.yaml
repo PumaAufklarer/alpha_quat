@@ -1,0 +1,26 @@
+name: daily_data_fetch
+description: 每日股票数据拉取流水线
+
+config:
+  data_dir: ./data
+  cache_enabled: true
+
+tasks:
+  - name: fetch_stock_list
+    task: fetch_stock_list
+    params:
+      exchange: ""
+      list_status: L
+      force_refresh: false
+
+  - name: filter_universe
+    task: filter_universe
+    depends_on: [fetch_stock_list]
+    params:
+      conditions:
+        - type: market
+          value: 主板
+        - type: list_status
+          value: L
+        - type: not_st
+          value: true

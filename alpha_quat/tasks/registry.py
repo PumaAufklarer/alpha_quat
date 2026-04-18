@@ -1,10 +1,8 @@
 """Task registry for registering and retrieving tasks."""
 
-from typing import Dict, Type
-
 from .base import Task
 
-_task_registry: Dict[str, Type[Task]] = {}
+_task_registry: dict[str, type[Task]] = {}
 
 
 def register_task(name: str):
@@ -18,7 +16,7 @@ def register_task(name: str):
         Decorator function
     """
 
-    def decorator(task_cls: Type[Task]) -> Type[Task]:
+    def decorator(task_cls: type[Task]) -> type[Task]:
         task_cls.name = name
         _task_registry[name] = task_cls
         return task_cls
@@ -26,7 +24,7 @@ def register_task(name: str):
     return decorator
 
 
-def get_task(name: str) -> Type[Task]:
+def get_task(name: str) -> type[Task]:
     """
     Get a registered task class by name.
 

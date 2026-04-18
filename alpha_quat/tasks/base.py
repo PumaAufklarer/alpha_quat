@@ -2,15 +2,15 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Dict
+from typing import Any
 
 
 @dataclass
 class TaskContext:
     """Context for passing data between tasks."""
 
-    data: Dict[str, Any]
-    config: Dict[str, Any]
+    data: dict[str, Any]
+    config: dict[str, Any]
 
 
 class Task(ABC):
@@ -19,7 +19,7 @@ class Task(ABC):
     name: str
 
     @abstractmethod
-    def run(self, context: TaskContext) -> Dict[str, Any]:
+    def run(self, context: TaskContext) -> dict[str, Any]:
         """
         Execute the task.
 
