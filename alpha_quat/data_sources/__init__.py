@@ -7,6 +7,7 @@ from .base import (
     get_or_fetch_data,
     merge_and_fetch_ts_data,
 )
+from .stock import StockDataSource
 
 __all__ = [
     "DataSourceBase",
@@ -14,4 +15,5 @@ __all__ = [
     "CacheMetadata",
     "get_or_fetch_data",
     "merge_and_fetch_ts_data",
+    "StockDataSource",
 ]
