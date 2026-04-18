@@ -1,6 +1,5 @@
 """Tests for stock data source module."""
 
-import pytest
 
 
 def test_import_stock_module():

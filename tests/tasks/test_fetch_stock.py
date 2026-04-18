@@ -1,14 +1,10 @@
 """Tests for stock fetch tasks."""
 
-import pytest
 
 
 def test_import_stock_tasks():
     """Test that stock fetch tasks can be imported."""
-    from alpha_quat.tasks.fetch import stock_daily
-    from alpha_quat.tasks.fetch import stock_weekly
-    from alpha_quat.tasks.fetch import stock_monthly
-    from alpha_quat.tasks.fetch import stock_daily_basic
+    from alpha_quat.tasks.fetch import stock_daily, stock_daily_basic, stock_monthly, stock_weekly
 
     assert stock_daily is not None
     assert stock_weekly is not None

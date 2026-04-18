@@ -2,12 +2,11 @@
 
 import logging
 from pathlib import Path
-from typing import Tuple
 
 import pandas as pd
 import tushare as ts
 
-from .base import OHLCDataSource, TushareFetcher, get_or_fetch_data, merge_and_fetch_ts_data
+from .base import OHLCDataSource, TushareFetcher, merge_and_fetch_ts_data
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +34,7 @@ class StockDataSource(OHLCDataSource):
         end_date: str = "",
         adj: str | None = None,
         force_refresh: bool = False,
-    ) -> Tuple[pd.DataFrame, bool]:
+    ) -> tuple[pd.DataFrame, bool]:
         """
         Get stock daily OHLC data.
 
@@ -130,9 +129,7 @@ class StockDataSource(OHLCDataSource):
             result = pd.concat(all_dfs, ignore_index=True)
             if "trade_date" in result.columns:
                 result = result.drop_duplicates(subset=["trade_date"], keep="last")
-                result = result.sort_values("trade_date", ascending=False).reset_index(
-                    drop=True
-                )
+                result = result.sort_values("trade_date", ascending=False).reset_index(drop=True)
             return result
         return pd.DataFrame()
 
@@ -159,7 +156,7 @@ class StockDataSource(OHLCDataSource):
         end_date: str = "",
         adj: str | None = None,
         force_refresh: bool = False,
-    ) -> Tuple[pd.DataFrame, bool]:
+    ) -> tuple[pd.DataFrame, bool]:
         """
         Get stock weekly OHLC data.
 
@@ -201,7 +198,7 @@ class StockDataSource(OHLCDataSource):
         end_date: str = "",
         adj: str | None = None,
         force_refresh: bool = False,
-    ) -> Tuple[pd.DataFrame, bool]:
+    ) -> tuple[pd.DataFrame, bool]:
         """
         Get stock monthly OHLC data.
 
@@ -242,7 +239,7 @@ class StockDataSource(OHLCDataSource):
         start_date: str = "",
         end_date: str = "",
         force_refresh: bool = False,
-    ) -> Tuple[pd.DataFrame, bool]:
+    ) -> tuple[pd.DataFrame, bool]:
         """
         Get stock daily basic indicators (PE, PB, etc.).
 

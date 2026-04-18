@@ -1,6 +1,5 @@
 """Tests for data_sources base module."""
 
-import pytest
 
 
 def test_import_data_sources_module():
@@ -17,8 +16,9 @@ def test_import_data_sources_module():
 
 def test_cache_metadata():
     """Test CacheMetadata dataclass."""
-    from alpha_quat.data_sources.base import CacheMetadata
     from datetime import datetime
+
+    from alpha_quat.data_sources.base import CacheMetadata
 
     metadata = CacheMetadata(
         date_range_start="20200101",

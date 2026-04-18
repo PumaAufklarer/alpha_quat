@@ -3,10 +3,10 @@
 import json
 import logging
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, Tuple
 
 import pandas as pd
 import pyarrow as pa
@@ -44,7 +44,7 @@ class OHLCDataSource(DataSourceBase):
         end_date: str = "",
         adj: str | None = None,
         force_refresh: bool = False,
-    ) -> Tuple[pd.DataFrame, bool]:
+    ) -> tuple[pd.DataFrame, bool]:
         """
         Get daily OHLC data.
 
@@ -70,7 +70,7 @@ class OHLCDataSource(DataSourceBase):
         end_date: str = "",
         adj: str | None = None,
         force_refresh: bool = False,
-    ) -> Tuple[pd.DataFrame, bool]:
+    ) -> tuple[pd.DataFrame, bool]:
         """
         Get weekly OHLC data.
 
@@ -91,7 +91,7 @@ class OHLCDataSource(DataSourceBase):
         end_date: str = "",
         adj: str | None = None,
         force_refresh: bool = False,
-    ) -> Tuple[pd.DataFrame, bool]:
+    ) -> tuple[pd.DataFrame, bool]:
         """
         Get monthly OHLC data.
 
@@ -160,7 +160,7 @@ def _get_cache_path(
     return cache_dir / f"{data_name}.parquet"
 
 
-def _read_parquet_with_metadata(path: Path) -> Tuple[pd.DataFrame, CacheMetadata | None]:
+def _read_parquet_with_metadata(path: Path) -> tuple[pd.DataFrame, CacheMetadata | None]:
     """Read parquet file and extract metadata."""
     if not path.exists():
         return pd.DataFrame(), None
@@ -197,7 +197,7 @@ def _write_parquet_with_metadata(
 def _extract_date_range(
     df: pd.DataFrame,
     date_cols: str | list[str],
-) -> Tuple[str | None, str | None]:
+) -> tuple[str | None, str | None]:
     """Extract date range from DataFrame."""
     if df.empty:
         return None, None
@@ -221,7 +221,7 @@ def get_or_fetch_data(
     data_dir: Path | None = None,
     force_refresh: bool = False,
     sub_dir: str | None = None,
-) -> Tuple[pd.DataFrame, bool]:
+) -> tuple[pd.DataFrame, bool]:
     """
     Get static data from cache or fetch from API.
 
@@ -268,7 +268,7 @@ def merge_and_fetch_ts_data(
     force_refresh: bool = False,
     unique_key: list[str] | None = None,
     sub_dir: str | None = None,
-) -> Tuple[pd.DataFrame, bool]:
+) -> tuple[pd.DataFrame, bool]:
     """
     Get time-series data, merge with existing cache if available.
 

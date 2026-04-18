@@ -1,6 +1,5 @@
 """Tests for index data source module."""
 
-import pytest
 
 
 def test_import_index_module():

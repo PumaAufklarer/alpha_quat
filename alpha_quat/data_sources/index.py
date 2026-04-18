@@ -2,7 +2,6 @@
 
 import logging
 from pathlib import Path
-from typing import Tuple
 
 import pandas as pd
 
@@ -34,7 +33,7 @@ class IndexDataSource(OHLCDataSource):
         end_date: str = "",
         adj: str | None = None,
         force_refresh: bool = False,
-    ) -> Tuple[pd.DataFrame, bool]:
+    ) -> tuple[pd.DataFrame, bool]:
         """
         Get index daily OHLC data.
 
@@ -80,7 +79,7 @@ class IndexDataSource(OHLCDataSource):
         end_date: str = "",
         adj: str | None = None,
         force_refresh: bool = False,
-    ) -> Tuple[pd.DataFrame, bool]:
+    ) -> tuple[pd.DataFrame, bool]:
         """
         Get index weekly OHLC data.
 
@@ -121,7 +120,7 @@ class IndexDataSource(OHLCDataSource):
         end_date: str = "",
         adj: str | None = None,
         force_refresh: bool = False,
-    ) -> Tuple[pd.DataFrame, bool]:
+    ) -> tuple[pd.DataFrame, bool]:
         """
         Get index monthly OHLC data.
 
