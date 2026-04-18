@@ -1,0 +1,52 @@
+name: full_data_fetch
+description: Fetch full stock and index data (daily/weekly/monthly + daily_basic)
+config:
+  start_date: "20200101"
+  end_date: "20241231"
+  adj: "qfq"
+  index_codes:
+    - "000001.SH"
+    - "399001.SZ"
+    - "000300.SH"
+    - "000905.SH"
+
+tasks:
+  - name: fetch_stock_list
+    task: fetch_stock_list
+    params:
+      exchange: ""
+      list_status: "L"
+
+  - name: fetch_universe
+    task: fetch_universe
+    depends_on: [fetch_stock_list]
+    params:
+      limit: 100
+
+  - name: fetch_index_daily_sh
+    task: fetch_index_daily
+    params:
+      ts_code: "000001.SH"
+      start_date: "${config.start_date}"
+      end_date: "${config.end_date}"
+
+  - name: fetch_index_daily_sz
+    task: fetch_index_daily
+    params:
+      ts_code: "399001.SZ"
+      start_date: "${config.start_date}"
+      end_date: "${config.end_date}"
+
+  - name: fetch_index_weekly_sh
+    task: fetch_index_weekly
+    params:
+      ts_code: "000001.SH"
+      start_date: "${config.start_date}"
+      end_date: "${config.end_date}"
+
+  - name: fetch_index_monthly_sh
+    task: fetch_index_monthly
+    params:
+      ts_code: "000001.SH"
+      start_date: "${config.start_date}"
+      end_date: "${config.end_date}"
