@@ -4,8 +4,12 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 import pandas as pd
+
+if TYPE_CHECKING:
+    from .filters import Filter
 
 
 class Condition(ABC):
@@ -38,7 +42,7 @@ class Universe:
     stock_list: pd.DataFrame  # From get_stock_list()
     daily_basic: pd.DataFrame  # From get_daily_basic()
 
-    def filter(self, filter_obj: "Filter") -> "Universe":
+    def filter(self, filter_obj: Filter) -> Universe:
         """
         Apply filter and return new Universe.
 
@@ -48,8 +52,6 @@ class Universe:
         Returns:
             New Universe containing only filtered stocks
         """
-        # Import here to avoid circular dependency
-        from .filters import Filter
 
         # Get combined data
         combined_data = self.get_stock_data()

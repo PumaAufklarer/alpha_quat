@@ -3,11 +3,11 @@
 import pandas as pd
 
 from alpha_quat.universe.conditions import (
-    ValueCondition,
-    RangeCondition,
-    MarketCapCondition,
-    ListingDateCondition,
     IsSTCondition,
+    ListingDateCondition,
+    MarketCapCondition,
+    RangeCondition,
+    ValueCondition,
 )
 
 
@@ -44,10 +44,12 @@ def test_range_condition():
 
 def test_market_cap_condition():
     """Test MarketCapCondition."""
-    data = pd.DataFrame({
-        "ts_code": ["001", "002", "003", "004"],
-        "total_mv": [50, 100, 200, 500],
-    })
+    data = pd.DataFrame(
+        {
+            "ts_code": ["001", "002", "003", "004"],
+            "total_mv": [50, 100, 200, 500],
+        }
+    )
 
     # Min only
     cond1 = MarketCapCondition(min_mv=100)
@@ -64,11 +66,13 @@ def test_market_cap_condition():
 
 def test_listing_date_condition():
     """Test ListingDateCondition."""
-    data = pd.DataFrame({
-        "ts_code": ["001", "002", "003"],
-        "list_date": ["20200101", "20220101", "20230601"],
-        "trade_date": ["20240101", "20240101", "20240101"],
-    })
+    data = pd.DataFrame(
+        {
+            "ts_code": ["001", "002", "003"],
+            "list_date": ["20200101", "20220101", "20230601"],
+            "trade_date": ["20240101", "20240101", "20240101"],
+        }
+    )
 
     # With reference date
     cond = ListingDateCondition(min_days=365, reference_date="20240101")
@@ -78,10 +82,12 @@ def test_listing_date_condition():
 
 def test_is_st_condition():
     """Test IsSTCondition."""
-    data = pd.DataFrame({
-        "ts_code": ["001", "002", "003", "004"],
-        "name": ["平安银行", "ST平安", "万科A", "*ST万科"],
-    })
+    data = pd.DataFrame(
+        {
+            "ts_code": ["001", "002", "003", "004"],
+            "name": ["平安银行", "ST平安", "万科A", "*ST万科"],
+        }
+    )
 
     # Exclude ST
     cond1 = IsSTCondition(exclude=True)
