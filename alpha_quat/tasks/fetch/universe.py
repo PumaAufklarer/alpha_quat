@@ -2,8 +2,10 @@
 
 import logging
 
-from alpha_quat.tasks import Task, TaskContext, register_task
+from alpha_quat.tasks.base import Task, TaskContext
+from alpha_quat.tasks.registry import register_task
 from alpha_quat.universe import (
+    EqualityCondition,
     Filter,
     IsSTCondition,
     MarketCapCondition,
@@ -47,21 +49,22 @@ class FilterUniverseTask(Task):
             field = cond_config.get("field")
             min_val = cond_config.get("min")
             max_val = cond_config.get("max")
+            operator = cond_config.get("operator", "==")
 
             if cond_type == "market":
-                conditions.append(ValueCondition("market", value))
+                conditions.append(EqualityCondition("market", value))
             elif cond_type == "list_status":
-                conditions.append(ValueCondition("list_status", value))
+                conditions.append(EqualityCondition("list_status", value))
             elif cond_type == "not_st":
-                conditions.append(IsSTCondition(invert=True))
+                conditions.append(IsSTCondition(exclude=True))
             elif cond_type == "is_st":
-                conditions.append(IsSTCondition())
+                conditions.append(IsSTCondition(exclude=False))
             elif cond_type == "market_cap":
                 conditions.append(MarketCapCondition(min_val, max_val))
             elif cond_type == "range":
                 conditions.append(RangeCondition(field, min_val, max_val))
             elif cond_type == "value":
-                conditions.append(ValueCondition(field, value))
+                conditions.append(ValueCondition(field, operator, value))
 
         universe = Universe(stock_list)
         if conditions:

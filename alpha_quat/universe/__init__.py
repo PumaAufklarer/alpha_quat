@@ -2,6 +2,7 @@
 
 from .base import Condition, Universe
 from .conditions import (
+    EqualityCondition,
     IsSTCondition,
     ListingDateCondition,
     MarketCapCondition,
@@ -15,6 +16,7 @@ __all__ = [
     "Condition",
     "Universe",
     "ValueCondition",
+    "EqualityCondition",
     "RangeCondition",
     "MarketCapCondition",
     "ListingDateCondition",

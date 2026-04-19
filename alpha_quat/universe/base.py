@@ -40,7 +40,16 @@ class Universe:
     """Stock universe container."""
 
     stock_list: pd.DataFrame  # From get_stock_list()
-    daily_basic: pd.DataFrame  # From get_daily_basic()
+    daily_basic: pd.DataFrame | None = None  # From get_daily_basic() (optional)
+
+    @property
+    def stocks(self) -> pd.DataFrame:
+        """Alias for stock_list for backward compatibility."""
+        return self.stock_list
+
+    def __len__(self) -> int:
+        """Return number of stocks in universe."""
+        return len(self.stock_list)
 
     def filter(self, filter_obj: Filter) -> Universe:
         """
@@ -66,9 +75,12 @@ class Universe:
         filtered_stock_list = self.stock_list[
             self.stock_list["ts_code"].isin(filtered_stocks)
         ].copy()
-        filtered_daily_basic = self.daily_basic[
-            self.daily_basic["ts_code"].isin(filtered_stocks)
-        ].copy()
+
+        filtered_daily_basic = None
+        if self.daily_basic is not None:
+            filtered_daily_basic = self.daily_basic[
+                self.daily_basic["ts_code"].isin(filtered_stocks)
+            ].copy()
 
         return Universe(
             stock_list=filtered_stock_list,
@@ -80,9 +92,12 @@ class Universe:
         return list(self.stock_list["ts_code"].unique())
 
     def get_stock_data(self) -> pd.DataFrame:
-        """Get combined stock data (stock_list + daily_basic)."""
-        # Merge on ts_code
-        if "ts_code" in self.stock_list.columns and "ts_code" in self.daily_basic.columns:
+        """Get combined stock data (stock_list + daily_basic if available)."""
+        if (
+            self.daily_basic is not None
+            and "ts_code" in self.stock_list.columns
+            and "ts_code" in self.daily_basic.columns
+        ):
             # Get latest daily_basic record per stock for filtering
             latest_daily = (
                 self.daily_basic.sort_values("trade_date", ascending=False)
@@ -96,4 +111,5 @@ class Universe:
                 on="ts_code",
                 how="inner",
             )
-        return self.daily_basic.copy()
+        # If no daily_basic, just return stock_list
+        return self.stock_list.copy()

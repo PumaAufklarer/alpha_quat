@@ -3,7 +3,8 @@
 import logging
 
 from alpha_quat.data_sources.index import IndexDataSource
-from alpha_quat.tasks import Task, TaskContext, register_task
+from alpha_quat.tasks.base import Task, TaskContext
+from alpha_quat.tasks.registry import register_task
 
 logger = logging.getLogger(__name__)
 

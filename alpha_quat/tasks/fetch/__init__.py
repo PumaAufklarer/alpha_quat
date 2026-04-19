@@ -1,6 +1,6 @@
 """Data fetching tasks."""
 
-from . import (
+from . import (  # noqa: F401
     index_daily,
     index_monthly,
     index_weekly,

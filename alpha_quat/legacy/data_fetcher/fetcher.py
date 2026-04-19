@@ -20,7 +20,7 @@ class TushareFetcher:
         """
         if config_path is None:
             # 默认在项目根目录查找config.json
-            project_root = Path(__file__).parent.parent
+            project_root = Path(__file__).parent.parent.parent
             config_path = project_root / "config.json"
         elif isinstance(config_path, str):
             config_path = Path(config_path)

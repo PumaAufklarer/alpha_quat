@@ -26,6 +26,8 @@ class ValueCondition(Condition):
         return f"{self.field}_{self.operator}_{self.value}"
 
     def apply(self, data: pd.DataFrame) -> pd.Series:
+        if self.field not in data.columns:
+            return pd.Series([True] * len(data), index=data.index)
         if self.operator == ">":
             return data[self.field] > self.value
         elif self.operator == ">=":
@@ -40,6 +42,28 @@ class ValueCondition(Condition):
             return data[self.field] != self.value
         else:
             raise ValueError(f"Unknown operator: {self.operator}")
+
+
+class EqualityCondition(Condition):
+    """Simple equality condition (field == value)."""
+
+    def __init__(self, field: str, value: float | int | str):
+        """
+        Args:
+            field: Field name to compare
+            value: Value to compare for equality
+        """
+        self.field = field
+        self.value = value
+
+    @property
+    def name(self) -> str:
+        return f"{self.field}_eq_{self.value}"
+
+    def apply(self, data: pd.DataFrame) -> pd.Series:
+        if self.field not in data.columns:
+            return pd.Series([True] * len(data), index=data.index)
+        return data[self.field] == self.value
 
 
 class RangeCondition(Condition):

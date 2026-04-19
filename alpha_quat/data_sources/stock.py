@@ -6,7 +6,7 @@ from pathlib import Path
 import pandas as pd
 import tushare as ts
 
-from .base import OHLCDataSource, TushareFetcher, merge_and_fetch_ts_data
+from .base import OHLCDataSource, TushareFetcher, get_or_fetch_data, merge_and_fetch_ts_data
 
 logger = logging.getLogger(__name__)
 
@@ -274,4 +274,28 @@ class StockDataSource(OHLCDataSource):
             force_refresh=force_refresh,
             unique_key=["ts_code", "trade_date"],
             sub_dir="stock/daily_basic",
+        )
+
+    def get_stock_list(
+        self, exchange: str = "", list_status: str = "L", force_refresh: bool = False
+    ) -> tuple[pd.DataFrame, bool]:
+        """
+        Get stock basic information (static data).
+
+        Args:
+            exchange: Exchange code (SSE/SZSE/BSE, empty for all)
+            list_status: List status (L: listed, D: delisted, P: suspended)
+            force_refresh: Skip cache if True
+
+        Returns:
+            Tuple of (DataFrame, is_cached)
+        """
+        exchange_suffix = f"_{exchange}" if exchange else ""
+        data_name = f"stock_list{exchange_suffix}_{list_status}"
+
+        def fetch():
+            return self.pro.stock_basic(exchange=exchange, list_status=list_status)
+
+        return get_or_fetch_data(
+            data_name, fetch, self.data_dir, force_refresh, sub_dir="stock_list"
         )

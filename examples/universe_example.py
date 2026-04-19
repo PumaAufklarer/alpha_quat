@@ -73,12 +73,6 @@ def main():
     logger.info("Creating sample data...")
     stock_list, daily_basic = create_sample_data()
 
-    # To use real data (uncomment):
-    # from alpha_quat.legacy.data_fetcher.sources import DataSource
-    # ds = DataSource()
-    # stock_list, _ = ds.get_stock_list(list_status="L")
-    # daily_basic, _ = ds.get_daily_basic()
-
     # 2. Create universe
     logger.info("Creating universe...")
     universe = Universe(stock_list=stock_list, daily_basic=daily_basic)
